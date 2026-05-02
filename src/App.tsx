@@ -1452,56 +1452,35 @@ export default function App() {
         /* Mobile App Responsiveness */
         .mobile-app-wrapper {
           min-height: 100vh;
-          background: #1A1D23;
+          background: ${C.bg};
           display: flex;
-          align-items: center;
           justify-content: center;
-          padding: 20px;
           font-family: ${T.body};
         }
         .mobile-phone-frame {
-          width: 390px;
-          height: 780px;
+          width: 100%;
+          max-width: 500px;
+          min-height: 100vh;
           background: ${C.surface};
-          border-radius: 44px;
-          overflow: hidden;
-          box-shadow: 0 40px 80px rgba(0,0,0,0.6), 0 0 0 10px #2A2D33, 0 0 0 12px #1A1D23;
+          box-shadow: 0 0 40px rgba(0,0,0,0.05);
           display: flex;
           flex-direction: column;
           position: relative;
-          flex-shrink: 0;
-        }
-        .mobile-desktop-notch {
-          position: absolute;
-          top: 0; left: 50%; transform: translateX(-50%);
-          width: 120px; height: 28px; background: #1A1D23;
-          border-radius: 0 0 20px 20px; z-index: 200;
         }
         .mobile-header-btn {
-          position: absolute; top: 20px; left: 20px;
+          position: fixed; top: 20px; left: 20px; z-index: 100;
         }
 
         @media (max-width: 600px) {
-          .mobile-app-wrapper {
-            padding: 0;
-            background: ${C.bg};
-          }
           .mobile-phone-frame {
-            width: 100% !important;
-            height: 100vh !important;
-            border-radius: 0 !important;
-            box-shadow: none !important;
-            border: none !important;
-            height: 100dvh !important; /* use dvh for real mobile browsers */
-          }
-          .mobile-desktop-notch {
-            display: none !important;
+            box-shadow: none;
           }
           .mobile-header-btn {
             top: 10px; left: 10px; z-index: 1000;
           }
           .mobile-header-btn button {
-            background: rgba(0,0,0,0.5) !important;
+            padding: 6px 12px !important;
+            font-size: 13px !important;
           }
         }
 
@@ -1589,18 +1568,12 @@ export default function App() {
       ) : (
       <div className="mobile-app-wrapper">
         <div className="mobile-header-btn">
-           <button onClick={() => setRole(null)} style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.2)", color: "#fff", padding: "8px 16px", borderRadius: 8, cursor: "pointer" }}><i className="fa-solid fa-chevron-left" style={{ marginRight: 8 }}></i> Trocar perfil</button>
+           <button onClick={() => setRole(null)} style={{ background: C.surface, border: `1px solid ${C.border}`, color: C.navy, padding: "8px 16px", borderRadius: 8, cursor: "pointer", boxShadow: "0 4px 6px rgba(0,0,0,0.05)", fontWeight: 600 }}><i className="fa-solid fa-chevron-left" style={{ marginRight: 8 }}></i> Trocar perfil</button>
         </div>
 
-        {/* Phone frame */}
+        {/* App container */}
         <div className="mobile-phone-frame">
-          {/* Notch */}
-          <div className="mobile-desktop-notch" />
-
-          {/* Status bar */}
-          <div style={{ paddingTop: 28, flexShrink: 0 }}>
-            <StatusBar />
-          </div>
+          <div style={{ paddingTop: 24, paddingBottom: 16 }}></div>
 
           {/* Back button for sub-screens */}
           {screen === "alertas" && (
@@ -1645,38 +1618,6 @@ export default function App() {
               onChange={navigate}
             />
           )}
-
-          {/* Home indicator */}
-          <div style={{
-            position: "absolute", bottom: 8, left: "50%", transform: "translateX(-50%)",
-            width: 120, height: 4, background: "#1A1D23", borderRadius: 4, zIndex: 300,
-          }} />
-        </div>
-
-        {/* Side legend */}
-        <div style={{
-          marginLeft: 32, color: "rgba(255,255,255,0.4)",
-          fontFamily: T.body, fontSize: 12, lineHeight: 2,
-          display: "flex", flexDirection: "column", gap: 4,
-        }}>
-          {NAV_ITEMS.map(n => (
-            <div key={n.id} style={{
-              cursor: "pointer",
-              color: screen === n.id ? "#fff" : "rgba(255,255,255,0.3)",
-              transition: "color 0.2s",
-              display: "flex", alignItems: "center", gap: 8,
-            }} onClick={() => navigate(n.id)}>
-              <span style={{ width: 20, textAlign: "center" }}><i className={n.icon}></i></span>
-              <span>{n.label}</span>
-            </div>
-          ))}
-          <div style={{ marginTop: 8, borderTop: "1px solid rgba(255,255,255,0.1)", paddingTop: 8 }}>
-            <div style={{ cursor: "pointer", display: "flex", gap: 8,
-              color: screen === "alertas" ? "#fff" : "rgba(255,255,255,0.3)"
-            }} onClick={() => navigate("alertas")}>
-              <span style={{ width: 20, textAlign: "center" }}><i className="fa-solid fa-bell"></i></span><span>Alertas</span>
-            </div>
-          </div>
         </div>
       </div>
       )}
