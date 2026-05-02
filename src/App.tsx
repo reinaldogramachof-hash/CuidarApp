@@ -1449,6 +1449,62 @@ export default function App() {
         }
         button:active { transform: scale(0.97) !important; }
 
+        /* Mobile App Responsiveness */
+        .mobile-app-wrapper {
+          min-height: 100vh;
+          background: #1A1D23;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 20px;
+          font-family: ${T.body};
+        }
+        .mobile-phone-frame {
+          width: 390px;
+          height: 780px;
+          background: ${C.surface};
+          border-radius: 44px;
+          overflow: hidden;
+          box-shadow: 0 40px 80px rgba(0,0,0,0.6), 0 0 0 10px #2A2D33, 0 0 0 12px #1A1D23;
+          display: flex;
+          flex-direction: column;
+          position: relative;
+          flex-shrink: 0;
+        }
+        .mobile-desktop-notch {
+          position: absolute;
+          top: 0; left: 50%; transform: translateX(-50%);
+          width: 120px; height: 28px; background: #1A1D23;
+          border-radius: 0 0 20px 20px; z-index: 200;
+        }
+        .mobile-header-btn {
+          position: absolute; top: 20px; left: 20px;
+        }
+
+        @media (max-width: 600px) {
+          .mobile-app-wrapper {
+            padding: 0;
+            background: ${C.bg};
+          }
+          .mobile-phone-frame {
+            width: 100% !important;
+            height: 100vh !important;
+            border-radius: 0 !important;
+            box-shadow: none !important;
+            border: none !important;
+            height: 100dvh !important; /* use dvh for real mobile browsers */
+          }
+          .mobile-desktop-notch {
+            display: none !important;
+          }
+          .mobile-header-btn {
+            top: 10px; left: 10px; z-index: 1000;
+          }
+          .mobile-header-btn button {
+            background: rgba(0,0,0,0.5) !important;
+          }
+        }
+
         /* Admin Dashboard Responsiveness */
         @media (max-width: 1024px) {
           .admin-grid-4 { grid-template-columns: repeat(2, 1fr) !important; }
@@ -1531,34 +1587,15 @@ export default function App() {
       ) : role === "admin" ? (
         <AdminDashboard onLogout={() => setRole(null)} />
       ) : (
-      <div style={{
-        minHeight: "100vh",
-        background: "#1A1D23",
-        display: "flex", alignItems: "center", justifyContent: "center",
-        padding: 20,
-        fontFamily: T.body,
-      }}>
-        <div style={{ position: "absolute", top: 20, left: 20 }}>
+      <div className="mobile-app-wrapper">
+        <div className="mobile-header-btn">
            <button onClick={() => setRole(null)} style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.2)", color: "#fff", padding: "8px 16px", borderRadius: 8, cursor: "pointer" }}><i className="fa-solid fa-chevron-left" style={{ marginRight: 8 }}></i> Trocar perfil</button>
         </div>
 
         {/* Phone frame */}
-        <div style={{
-          width: 390, height: 780,
-          background: C.surface,
-          borderRadius: 44,
-          overflow: "hidden",
-          boxShadow: "0 40px 80px rgba(0,0,0,0.6), 0 0 0 10px #2A2D33, 0 0 0 12px #1A1D23",
-          display: "flex", flexDirection: "column",
-          position: "relative",
-          flexShrink: 0,
-        }}>
+        <div className="mobile-phone-frame">
           {/* Notch */}
-          <div style={{
-            position: "absolute", top: 0, left: "50%", transform: "translateX(-50%)",
-            width: 120, height: 28, background: "#1A1D23",
-            borderRadius: "0 0 20px 20px", zIndex: 200,
-          }} />
+          <div className="mobile-desktop-notch" />
 
           {/* Status bar */}
           <div style={{ paddingTop: 28, flexShrink: 0 }}>
