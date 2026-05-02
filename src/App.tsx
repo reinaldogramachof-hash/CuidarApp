@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { motion, AnimatePresence } from "motion/react";
 
 /* ─── GOOGLE FONTS ─────────────────────────────────────────── */
 const FontLoader = () => {
@@ -56,15 +57,15 @@ const patient = {
 };
 
 const timeline = [
-  { time: "07h32", label: "Check-in de Ana Lima", icon: "✅", done: true, type: "checkin" },
-  { time: "08h00", label: "Café da manhã realizado", icon: "✅", done: true, type: "food" },
-  { time: "08h30", label: "Losartana 50mg administrada", icon: "✅", done: true, type: "med" },
-  { time: "09h15", label: "Banho assistido concluído", icon: "✅", done: true, type: "care" },
-  { time: "09h45", label: "Sinais vitais aferidos", icon: "✅", done: true, type: "vitals" },
-  { time: "12h00", label: "Almoço em andamento", icon: "🔄", done: false, type: "food", active: true },
-  { time: "14h00", label: "Metformina 500mg pendente", icon: "⏳", done: false, type: "med" },
-  { time: "17h00", label: "Exercícios leves", icon: "⏳", done: false, type: "care" },
-  { time: "19h30", label: "Check-out previsto", icon: "⏳", done: false, type: "checkout" },
+  { time: "07h32", label: "Check-in de Ana Lima", icon: "fa-solid fa-check", done: true, type: "checkin" },
+  { time: "08h00", label: "Café da manhã realizado", icon: "fa-solid fa-check", done: true, type: "food" },
+  { time: "08h30", label: "Losartana 50mg administrada", icon: "fa-solid fa-check", done: true, type: "med" },
+  { time: "09h15", label: "Banho assistido concluído", icon: "fa-solid fa-check", done: true, type: "care" },
+  { time: "09h45", label: "Sinais vitais aferidos", icon: "fa-solid fa-check", done: true, type: "vitals" },
+  { time: "12h00", label: "Almoço em andamento", icon: "fa-solid fa-rotate", done: false, type: "food", active: true },
+  { time: "14h00", label: "Metformina 500mg pendente", icon: "fa-solid fa-hourglass-half", done: false, type: "med" },
+  { time: "17h00", label: "Exercícios leves", icon: "fa-solid fa-hourglass-half", done: false, type: "care" },
+  { time: "19h30", label: "Check-out previsto", icon: "fa-solid fa-hourglass-half", done: false, type: "checkout" },
 ];
 
 const medications = [
@@ -76,10 +77,10 @@ const medications = [
 ];
 
 const vitals = [
-  { label: "Pressão Arterial", value: "120/80", unit: "mmHg", status: "ok", icon: "🫀" },
-  { label: "Glicemia", value: "98", unit: "mg/dL", status: "ok", icon: "🩸" },
-  { label: "SpO₂", value: "97", unit: "%", status: "ok", icon: "💨" },
-  { label: "Temperatura", value: "36.4", unit: "°C", status: "ok", icon: "🌡️" },
+  { label: "Pressão Arterial", value: "120/80", unit: "mmHg", status: "ok", icon: "fa-solid fa-heart-pulse" },
+  { label: "Glicemia", value: "98", unit: "mg/dL", status: "ok", icon: "fa-solid fa-droplet" },
+  { label: "SpO₂", value: "97", unit: "%", status: "ok", icon: "fa-solid fa-lungs" },
+  { label: "Temperatura", value: "36.4", unit: "°C", status: "ok", icon: "fa-solid fa-temperature-half" },
 ];
 
 const weekDays = [
@@ -107,8 +108,8 @@ const alerts = [
 ];
 
 const occurrences = [
-  { date: "28/04", icon: "⚠️", color: C.warning, text: "Queda leve ao se levantar, sem ferimentos. Médico notificado." },
-  { date: "25/04", icon: "ℹ️", color: C.info, text: "Recusa alimentar no jantar. Ingeriu líquidos normalmente." },
+  { date: "28/04", icon: "fa-solid fa-triangle-exclamation", color: C.warning, text: "Queda leve ao se levantar, sem ferimentos. Médico notificado." },
+  { date: "25/04", icon: "fa-solid fa-circle-info", color: C.info, text: "Recusa alimentar no jantar. Ingeriu líquidos normalmente." },
 ];
 
 /* ─── SHARED STYLES ─────────────────────────────────────────── */
@@ -178,6 +179,21 @@ const S = {
 };
 
 /* ─── ATOMS ────────────────────────────────────────────────── */
+const Logo = ({ size = 80 }) => (
+  <svg width={size} height={size} viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect width="100" height="100" rx="24" fill="url(#paint0_linear)"/>
+    <path d="M50 72C50 72 26 54 26 38.5C26 29.94 32.94 23 41.5 23C46.3 23 50 25.8 50 25.8C50 25.8 53.7 23 58.5 23C67.06 23 74 29.94 74 38.5C74 54 50 72 50 72Z" fill="white"/>
+    <path d="M50 72C50 72 26 54 26 38.5C26 29.94 32.94 23 41.5 23C46.3 23 50 25.8 50 25.8L50 72Z" fill="white" fillOpacity="0.7"/>
+    <path d="M43 45H57M50 38V52" stroke="#00897B" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round"/>
+    <defs>
+      <linearGradient id="paint0_linear" x1="0" y1="0" x2="100" y2="100" gradientUnits="userSpaceOnUse">
+        <stop stopColor="#1565C0"/>
+        <stop offset="1" stopColor="#0D47A1"/>
+      </linearGradient>
+    </defs>
+  </svg>
+);
+
 const Avatar = ({ src, size = 40, initials = "?" }: { src?: string, size?: number, initials?: string }) => (
   <div style={{
     width: size, height: size, borderRadius: "50%",
@@ -192,7 +208,7 @@ const Avatar = ({ src, size = 40, initials = "?" }: { src?: string, size?: numbe
 
 const StatusBadge = ({ status }: { status: "done" | "pending" | "upcoming" }) => {
   const cfg = {
-    done: { label: "Administrada ✓", color: C.success, bg: C.successLight },
+    done: { label: <>Administrada <i className="fa-solid fa-check"></i></>, color: C.success, bg: C.successLight },
     pending: { label: "Pendente", color: C.warning, bg: C.warningLight },
     upcoming: { label: "Agendada", color: C.textMid, bg: C.bg },
   };
@@ -229,14 +245,13 @@ const SplashScreen = ({ onEnter }: { onEnter: () => void }) => (
   }}>
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 16 }}>
       <div style={{
-        width: 80, height: 80, borderRadius: 24,
-        background: C.primary,
-        display: "flex", alignItems: "center", justifyContent: "center",
         boxShadow: `0 12px 32px rgba(21,101,192,0.30)`,
-        fontSize: 36,
-      }}>🛡️</div>
+        borderRadius: 24,
+      }}>
+        <Logo size={80} />
+      </div>
       <div style={{ textAlign: "center" }}>
-        <div style={{ fontFamily: T.display, fontWeight: 900, fontSize: 32, color: C.navy, letterSpacing: -0.5 }}>
+        <div style={{ fontFamily: T.display, fontWeight: 900, fontSize: 32, color: C.primaryDark, letterSpacing: -0.5 }}>
           CuidarApp
         </div>
         <div style={{ fontFamily: T.body, fontSize: 14, color: C.textMid, marginTop: 6, lineHeight: 1.5 }}>
@@ -246,7 +261,7 @@ const SplashScreen = ({ onEnter }: { onEnter: () => void }) => (
     </div>
 
     <div style={{ width: "100%", textAlign: "center" }}>
-      <div style={{ fontSize: 72, marginBottom: 16, lineHeight: 1 }}>👩👴</div>
+      <div style={{ fontSize: 64, marginBottom: 16, color: C.primary }}><i className="fa-solid fa-hands-holding-child"></i></div>
       <div style={{
         background: C.surface, borderRadius: 20, padding: 20,
         boxShadow: "0 8px 32px rgba(21,101,192,0.10)",
@@ -291,9 +306,9 @@ const DashboardScreen = ({ onAlerts }: { onAlerts: () => void }) => (
       <button onClick={onAlerts} style={{
         background: C.dangerLight, border: "none", borderRadius: 12, width: 44, height: 44,
         cursor: "pointer", position: "relative", display: "flex", alignItems: "center", justifyContent: "center",
-        fontSize: 20,
+        fontSize: 20, color: C.danger,
       }}>
-        🔔
+        <i className="fa-regular fa-bell"></i>
         <span style={{
           position: "absolute", top: 6, right: 6, width: 10, height: 10,
           background: C.danger, borderRadius: "50%", border: "2px solid white",
@@ -332,7 +347,7 @@ const DashboardScreen = ({ onAlerts }: { onAlerts: () => void }) => (
           <Avatar src={patient.caregiver.photo} size={28} />
           <div>
             <div style={{ fontFamily: T.body, fontWeight: 600, fontSize: 12, color: "#fff" }}>
-              🟢 {patient.caregiver.name} presente
+              <i className="fa-solid fa-circle" style={{ fontSize: 10, color: "#4CAF50", marginRight: 4 }}></i> {patient.caregiver.name} presente
             </div>
             <div style={{ fontFamily: T.body, fontSize: 11, color: "rgba(255,255,255,0.65)" }}>
               desde {patient.caregiver.since}
@@ -347,15 +362,15 @@ const DashboardScreen = ({ onAlerts }: { onAlerts: () => void }) => (
     <div style={{ ...S.sectionTitle, marginTop: 20 }}>Resumo de hoje</div>
     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
       {[
-        { icon: "💊", label: "Medicação", value: "3/4", sub: "doses", color: C.primary, bg: C.primaryLight },
-        { icon: "📋", label: "Tarefas", value: "5/7", sub: "concluídas", color: C.accent, bg: C.accentLight },
-        { icon: "⚠️", label: "Alertas", value: "2", sub: "pendentes", color: C.warning, bg: C.warningLight },
-        { icon: "📅", label: "Próxima visita", value: "Sáb", sub: "08h00", color: C.info, bg: C.infoLight },
+        { icon: "fa-solid fa-pills", label: "Medicação", value: "3/4", sub: "doses", color: C.primary, bg: C.primaryLight },
+        { icon: "fa-solid fa-clipboard-check", label: "Tarefas", value: "5/7", sub: "concluídas", color: C.accent, bg: C.accentLight },
+        { icon: "fa-solid fa-triangle-exclamation", label: "Alertas", value: "2", sub: "pendentes", color: C.warning, bg: C.warningLight },
+        { icon: "fa-regular fa-calendar-check", label: "Próxima visita", value: "Sáb", sub: "08h00", color: C.info, bg: C.infoLight },
       ].map((m, i) => (
         <div key={i} style={{ ...S.card, display: "flex", gap: 10, alignItems: "center", padding: 14 }}>
-          <div style={{ width: 40, height: 40, borderRadius: 12, background: m.bg,
+          <div style={{ width: 40, height: 40, borderRadius: 12, background: m.bg, color: m.color,
             display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0 }}>
-            {m.icon}
+            <i className={m.icon}></i>
           </div>
           <div>
             <div style={{ fontFamily: T.body, fontSize: 11, color: C.textMid }}>{m.label}</div>
@@ -372,22 +387,38 @@ const DashboardScreen = ({ onAlerts }: { onAlerts: () => void }) => (
     <div style={S.sectionTitle}>Linha do dia</div>
     <div style={{ ...S.card, padding: "16px 16px 8px" }}>
       {timeline.map((t, i) => (
-        <div key={i} style={{ display: "flex", gap: 12, paddingBottom: 14, position: "relative" }}>
+        <motion.div 
+          key={i} 
+          initial={{ opacity: 0, x: -10 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.3, delay: i * 0.08 }}
+          style={{ display: "flex", gap: 12, paddingBottom: 14, position: "relative" }}
+        >
           {i < timeline.length - 1 && (
-            <div style={{
-              position: "absolute", left: 15, top: 22, bottom: 0,
-              width: 2, background: t.done ? C.primaryMid : C.border,
-            }} />
+            <motion.div 
+              initial={t.done ? { height: 0 } : false}
+              animate={t.done ? { height: "100%" } : false}
+              transition={{ duration: 0.5, delay: i * 0.08 + 0.2 }}
+              style={{
+                position: "absolute", left: 15, top: 22, bottom: 0,
+                width: 2, background: t.done ? C.primaryMid : C.border,
+                transformOrigin: "top"
+              }} 
+            />
           )}
-          <div style={{
-            width: 30, height: 30, borderRadius: "50%", flexShrink: 0,
-            background: t.active ? C.primary : t.done ? C.primaryLight : C.bg,
-            border: `2px solid ${t.active ? C.primary : t.done ? C.primaryMid : C.border}`,
-            display: "flex", alignItems: "center", justifyContent: "center",
-            fontSize: 13, zIndex: 1,
+          <motion.div
+            initial={t.type === "checkin" ? { scale: 0, opacity: 0, rotate: -45 } : false}
+            animate={t.type === "checkin" ? { scale: 1, opacity: 1, rotate: 0 } : false}
+            transition={t.type === "checkin" ? { type: "spring", stiffness: 300, damping: 12, delay: 0.4 } : {}}
+            style={{
+              width: 30, height: 30, borderRadius: "50%", flexShrink: 0,
+              background: t.active ? C.primary : t.done ? C.primaryLight : C.bg,
+              border: `2px solid ${t.active ? C.primary : t.done ? C.primaryMid : C.border}`,
+              display: "flex", alignItems: "center", justifyContent: "center",
+              fontSize: 13, zIndex: 1, color: t.done ? C.primary : C.textMid,
           }}>
-            {t.active ? <span style={{ width: 8, height: 8, background: "#fff", borderRadius: "50%" }} /> : t.icon}
-          </div>
+            {t.active ? <span style={{ width: 8, height: 8, background: "#fff", borderRadius: "50%" }} /> : <i className={t.icon}></i>}
+          </motion.div>
           <div style={{ flex: 1, paddingTop: 4 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
               <span style={{ fontFamily: T.body, fontWeight: 600, fontSize: 13,
@@ -400,7 +431,7 @@ const DashboardScreen = ({ onAlerts }: { onAlerts: () => void }) => (
               {t.time}
             </div>
           </div>
-        </div>
+        </motion.div>
       ))}
     </div>
   </div>
@@ -464,7 +495,7 @@ const SaudeScreen = () => {
                 </div>
                 {m.status === "done" && (
                   <div style={{ fontFamily: T.body, fontSize: 11, color: C.accent, marginTop: 4 }}>
-                    ✓ Confirmado por {m.by} às {m.at}
+                    <i className="fa-solid fa-check"></i> Confirmado por {m.by} às {m.at}
                   </div>
                 )}
               </div>
@@ -486,7 +517,7 @@ const SaudeScreen = () => {
               background: C.successLight, borderRadius: 12, padding: "12px 14px",
               border: `1px solid #C8E6C9`,
             }}>
-              <div style={{ fontSize: 20, marginBottom: 4 }}>{v.icon}</div>
+              <div style={{ fontSize: 20, marginBottom: 4, color: C.success }}><i className={v.icon}></i></div>
               <div style={{ fontFamily: T.display, fontWeight: 800, fontSize: 18, color: C.success }}>
                 {v.value}
                 <span style={{ fontFamily: T.body, fontSize: 11, fontWeight: 400, color: C.textMid, marginLeft: 2 }}>
@@ -548,7 +579,7 @@ const AgendaScreen = () => {
             borderTop: `4px solid ${C.primary}`,
           }}>
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 14 }}>
-              <span style={S.badge(C.success, C.successLight)}>✓ Visita Confirmada</span>
+              <span style={S.badge(C.success, C.successLight)}><i className="fa-solid fa-check"></i> Visita Confirmada</span>
               <span style={{ fontFamily: T.body, fontSize: 12, color: C.textMid }}>07h30–19h30</span>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
@@ -567,13 +598,13 @@ const AgendaScreen = () => {
             </div>
             <div style={{ display: "flex", gap: 8 }}>
               <button style={{ ...S.btn, flex: 1 }}>Ver plano completo</button>
-              <button style={{ ...S.btnOutline, flex: 1 }}>💬 Falar com Ana</button>
+              <button style={{ ...S.btnOutline, flex: 1, display: "flex", gap: "8px", alignItems: "center", justifyContent: "center" }}><i className="fa-regular fa-comment-dots"></i> Falar com Ana</button>
             </div>
           </div>
         </>
       ) : (
         <div style={{ ...S.card, textAlign: "center", padding: 32, marginTop: 16 }}>
-          <div style={{ fontSize: 40, marginBottom: 8 }}>📭</div>
+          <div style={{ fontSize: 40, marginBottom: 8 }}><i className="fa-regular fa-calendar-xmark" style={{ color: C.textLight }}></i></div>
           <div style={{ fontFamily: T.display, fontWeight: 700, fontSize: 15, color: C.navy }}>
             Sem visita este dia
           </div>
@@ -596,7 +627,7 @@ const AgendaScreen = () => {
               background: v.status === "confirmed" ? C.accentLight : C.warningLight,
               display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20,
             }}>
-              {v.status === "confirmed" ? "✅" : "⏳"}
+              {v.status === "confirmed" ? <i className="fa-solid fa-check"></i> : <i className="fa-solid fa-hourglass-half"></i>}
             </div>
             <div style={{ flex: 1 }}>
               <div style={{ fontFamily: T.display, fontWeight: 700, fontSize: 14, color: C.navy }}>{v.date}</div>
@@ -621,7 +652,7 @@ const AgendaScreen = () => {
         boxShadow: `0 8px 24px rgba(21,101,192,0.35)`,
         cursor: "pointer", zIndex: 50,
       }}>
-        + Visita extra
+        <i className="fa-solid fa-plus"></i> Visita extra
       </div>
     </div>
   );
@@ -653,13 +684,13 @@ const RelatoriosScreen = () => {
       {/* Stats grid */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
         {[
-          { label: "Visitas realizadas", value: "22", icon: "🏠", color: C.primary, bg: C.primaryLight },
-          { label: "Taxa de presença", value: "96%", icon: "✅", color: C.success, bg: C.successLight },
-          { label: "Medicações corretas", value: "98%", icon: "💊", color: C.accent, bg: C.accentLight },
-          { label: "Ocorrências", value: "2", icon: "⚠️", color: C.warning, bg: C.warningLight },
+          { label: "Visitas realizadas", value: "22", icon: "fa-solid fa-house-medical", color: C.primary, bg: C.primaryLight },
+          { label: "Taxa de presença", value: "96%", icon: "fa-solid fa-calendar-check", color: C.success, bg: C.successLight },
+          { label: "Medicações corretas", value: "98%", icon: "fa-solid fa-pills", color: C.accent, bg: C.accentLight },
+          { label: "Ocorrências", value: "2", icon: "fa-solid fa-triangle-exclamation", color: C.warning, bg: C.warningLight },
         ].map((s, i) => (
           <div key={i} style={{ ...S.card, textAlign: "center", padding: 18 }}>
-            <div style={{ fontSize: 26, marginBottom: 6 }}>{s.icon}</div>
+            <div style={{ fontSize: 26, marginBottom: 6, color: s.color }}><i className={s.icon}></i></div>
             <div style={{ fontFamily: T.display, fontWeight: 900, fontSize: 26, color: s.color }}>
               {s.value}
             </div>
@@ -699,7 +730,7 @@ const RelatoriosScreen = () => {
             display: "flex", gap: 12, alignItems: "flex-start",
             borderLeft: `4px solid ${o.color}`,
           }}>
-            <div style={{ fontSize: 20, marginTop: 2 }}>{o.icon}</div>
+            <div style={{ fontSize: 20, marginTop: 2, color: o.color }}><i className={o.icon}></i></div>
             <div>
               <div style={{ fontFamily: T.body, fontSize: 11, color: C.textMid, marginBottom: 3 }}>
                 {o.date}
@@ -717,7 +748,7 @@ const RelatoriosScreen = () => {
         ...S.btn, marginTop: 20, padding: "14px 20px", borderRadius: 14, fontSize: 15,
         display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
       }}>
-        📥 Baixar relatório PDF
+        <i className="fa-solid fa-download"></i> Baixar relatório PDF
       </button>
     </div>
   );
@@ -808,7 +839,7 @@ const PerfilScreen = () => (
         {patient.age} anos · Nascida em {patient.dob}
       </div>
       <div style={{ fontFamily: T.body, fontSize: 12, color: C.textMid, marginTop: 2 }}>
-        📍 {patient.address}
+        <i className="fa-solid fa-location-dot"></i> {patient.address}
       </div>
     </div>
 
@@ -862,7 +893,8 @@ const PerfilScreen = () => (
       <button style={{
         background: C.accentLight, border: "none", borderRadius: 10, padding: "8px 14px",
         fontFamily: T.body, fontWeight: 600, fontSize: 12, color: C.accent, cursor: "pointer",
-      }}>💬 Chat</button>
+        display: "flex", gap: "6px", alignItems: "center"
+      }}><i className="fa-regular fa-comment-dots"></i> Chat</button>
     </div>
 
     {/* Emergency contacts */}
@@ -888,7 +920,8 @@ const PerfilScreen = () => (
             background: C.primaryLight, border: "none", borderRadius: 10, padding: "8px 12px",
             fontFamily: T.body, fontWeight: 600, fontSize: 12, color: C.primary,
             cursor: "pointer", textDecoration: "none",
-          }}>📞 Ligar</a>
+            display: "flex", gap: "6px", alignItems: "center"
+          }}><i className="fa-solid fa-phone"></i> Ligar</a>
         </div>
       ))}
     </div>
@@ -897,11 +930,11 @@ const PerfilScreen = () => (
 
 /* ─── BOTTOM NAV ────────────────────────────────────────────── */
 const NAV_ITEMS = [
-  { id: "dashboard", icon: "🏠", label: "Início" },
-  { id: "saude", icon: "💊", label: "Saúde" },
-  { id: "agenda", icon: "📅", label: "Agenda" },
-  { id: "relatorios", icon: "📊", label: "Relatórios" },
-  { id: "perfil", icon: "👤", label: "Perfil" },
+  { id: "dashboard", icon: "fa-solid fa-house", label: "Início" },
+  { id: "saude", icon: "fa-solid fa-pills", label: "Saúde" },
+  { id: "agenda", icon: "fa-solid fa-calendar-day", label: "Agenda" },
+  { id: "relatorios", icon: "fa-solid fa-chart-pie", label: "Relatórios" },
+  { id: "perfil", icon: "fa-solid fa-user", label: "Perfil" },
 ];
 
 const BottomNav = ({ active, onChange }: { active: string, onChange: (id: string) => void }) => (
@@ -926,12 +959,12 @@ const BottomNav = ({ active, onChange }: { active: string, onChange: (id: string
           }} />
         )}
         <span style={{
-          fontSize: 22,
+          fontSize: 20,
           filter: active === item.id ? "none" : "grayscale(100%) opacity(50%)",
           transform: active === item.id ? "scale(1.1)" : "scale(1)",
           display: "block",
           transition: "all 0.2s ease",
-        }}>{item.icon}</span>
+        }}><i className={item.icon}></i></span>
         <span style={{
           fontFamily: T.body, fontWeight: 600, fontSize: 10,
           color: active === item.id ? C.primary : C.textLight,
@@ -964,7 +997,10 @@ const StatusBar = () => {
       flexShrink: 0,
     }}>
       <span style={{ fontFamily: T.display, fontWeight: 800, fontSize: 14, color: C.navy }}>{time}</span>
-      <span style={{ fontFamily: T.body, fontSize: 12, color: C.textMid }}>📶 🔋</span>
+      <span style={{ fontFamily: T.body, fontSize: 13, color: C.textMid, display: "flex", gap: "6px" }}>
+        <i className="fa-solid fa-signal"></i>
+        <i className="fa-solid fa-battery-full"></i>
+      </span>
     </div>
   );
 };
@@ -1004,7 +1040,6 @@ export default function App() {
           from { opacity: 0; transform: translateY(12px); }
           to   { opacity: 1; transform: translateY(0); }
         }
-        .screen-enter { animation: fadeSlide 0.25s ease forwards; }
         button:active { transform: scale(0.97) !important; }
       `}</style>
 
@@ -1048,19 +1083,31 @@ export default function App() {
               <button onClick={() => navigate("dashboard")} style={{
                 background: C.bg, border: "none", borderRadius: 10, padding: "6px 12px",
                 fontFamily: T.body, fontWeight: 600, fontSize: 13, color: C.navy, cursor: "pointer",
-                display: "flex", alignItems: "center", gap: 4,
+                display: "flex", alignItems: "center", gap: 6,
               }}>
-                ← Voltar
+                <i className="fa-solid fa-chevron-left"></i> Voltar
               </button>
             </div>
           )}
 
           {/* Screen content */}
-          <div key={screen} className="screen-enter" style={{
-            flex: 1, overflow: "hidden", background: C.bg,
-            position: "relative",
-          }}>
-            {renderScreen()}
+          <div style={{ flex: 1, overflow: "hidden", background: C.bg, position: "relative" }}>
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={screen}
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                transition={{ duration: 0.25, ease: "easeInOut" }}
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  overflowY: "auto",
+                }}
+              >
+                {renderScreen()}
+              </motion.div>
+            </AnimatePresence>
           </div>
 
           {/* Bottom nav (only for main app screens) */}
@@ -1091,7 +1138,7 @@ export default function App() {
               transition: "color 0.2s",
               display: "flex", alignItems: "center", gap: 8,
             }} onClick={() => navigate(n.id)}>
-              <span>{n.icon}</span>
+              <span style={{ width: 20, textAlign: "center" }}><i className={n.icon}></i></span>
               <span>{n.label}</span>
             </div>
           ))}
@@ -1099,7 +1146,7 @@ export default function App() {
             <div style={{ cursor: "pointer", display: "flex", gap: 8,
               color: screen === "alertas" ? "#fff" : "rgba(255,255,255,0.3)"
             }} onClick={() => navigate("alertas")}>
-              <span>🔔</span><span>Alertas</span>
+              <span style={{ width: 20, textAlign: "center" }}><i className="fa-solid fa-bell"></i></span><span>Alertas</span>
             </div>
           </div>
         </div>
