@@ -1005,8 +1005,184 @@ const StatusBar = () => {
   );
 };
 
+/* ─── ADMIN DASHBOARD ───────────────────────────────────────── */
+const AdminDashboard = ({ onLogout }: { onLogout: () => void }) => {
+  const [activeTab, setActiveTab] = useState("overview");
+
+  return (
+    <div style={{ display: "flex", height: "100vh", width: "100vw", background: C.bg, fontFamily: T.body, overflow: "hidden" }}>
+      {/* Sidebar */}
+      <div style={{ width: 260, background: C.surface, borderRight: `1px solid ${C.border}`, display: "flex", flexDirection: "column" }}>
+        <div style={{ padding: 24, display: "flex", alignItems: "center", gap: 12, borderBottom: `1px solid ${C.border}` }}>
+          <div style={{ background: C.primary, width: 36, height: 36, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", flexShrink: 0 }}>
+             <i className="fa-solid fa-shield-heart" style={{ fontSize: 20 }}></i>
+          </div>
+          <div>
+            <div style={{ fontFamily: T.display, fontWeight: 900, fontSize: 18, color: C.navy, letterSpacing: -0.5 }}>CuidarApp</div>
+            <div style={{ fontSize: 11, color: C.textMid }}>Gestão de Clínicas</div>
+          </div>
+        </div>
+        
+        <div style={{ flex: 1, padding: "24px 16px", display: "flex", flexDirection: "column", gap: 8 }}>
+          {[
+            { id: "overview", icon: "fa-solid fa-chart-line", label: "Visão Geral" },
+            { id: "patients", icon: "fa-solid fa-bed-pulse", label: "Pacientes" },
+            { id: "caregivers", icon: "fa-solid fa-user-nurse", label: "Cuidadores" },
+            { id: "schedule", icon: "fa-solid fa-calendar-days", label: "Escalas" },
+            { id: "alerts", icon: "fa-solid fa-bell", label: "Alertas" },
+            { id: "reports", icon: "fa-solid fa-file-invoice", label: "Relatórios" },
+          ].map(t => (
+            <button key={t.id} onClick={() => setActiveTab(t.id)} style={{
+              display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", borderRadius: 12, cursor: "pointer",
+              border: "none", background: activeTab === t.id ? C.primaryLight : "transparent",
+              color: activeTab === t.id ? C.primary : C.textMid, fontFamily: T.display, fontWeight: 700, fontSize: 14,
+              transition: "all 0.2s"
+            }}>
+              <i className={t.icon} style={{ fontSize: 16, width: 20, textAlign: "center" }}></i>
+              <span style={{ flex: 1, textAlign: "left" }}>{t.label}</span>
+              {t.id === "alerts" && (
+                <div style={{ background: C.danger, color: "#fff", fontSize: 10, padding: "3px 8px", borderRadius: 10 }}>2</div>
+              )}
+            </button>
+          ))}
+        </div>
+        
+        <div style={{ padding: 24, borderTop: `1px solid ${C.border}` }}>
+          <button onClick={onLogout} style={{ border: "none", background: "transparent", color: C.danger, display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontFamily: T.display, fontWeight: 700 }}>
+             <i className="fa-solid fa-arrow-right-from-bracket"></i> Sair do Painel
+          </button>
+        </div>
+      </div>
+      
+      {/* Main Content */}
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+        <div style={{ height: 70, background: C.surface, borderBottom: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 32px" }}>
+           <div style={{ fontFamily: T.display, fontWeight: 800, fontSize: 20, color: C.navy }}>
+             Painel de Controle
+           </div>
+           
+           <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+             <div style={{ position: "relative", cursor: "pointer" }}>
+               <i className="fa-regular fa-bell" style={{ fontSize: 20, color: C.textMid }}></i>
+               <div style={{ position: "absolute", top: -2, right: -4, width: 8, height: 8, background: C.danger, borderRadius: "50%" }}></div>
+             </div>
+             <div style={{ display: "flex", alignItems: "center", gap: 12, borderLeft: `1px solid ${C.border}`, paddingLeft: 16 }}>
+               <Avatar src="https://i.pravatar.cc/150?img=11" size={36} />
+               <div style={{ textAlign: "left" }}>
+                 <div style={{ fontFamily: T.display, fontWeight: 700, fontSize: 13, color: C.navy }}>Carla Martins</div>
+                 <div style={{ fontSize: 11, color: C.textMid }}>Gerente Operacional</div>
+               </div>
+             </div>
+           </div>
+        </div>
+        
+        <div style={{ flex: 1, overflowY: "auto", padding: 32 }}>
+           {activeTab === "overview" ? <AdminOverview /> : (
+             <div style={{ textAlign: "center", padding: 60, color: C.textMid }}>
+                <i className="fa-solid fa-person-digging" style={{ fontSize: 40, marginBottom: 16, color: C.primaryLight }}></i>
+                <div style={{ fontFamily: T.display, fontWeight: 800, fontSize: 20, color: C.navy }}>Em desenvolvimento</div>
+                <p style={{ marginTop: 8 }}>Esta seção do painel será disponibilizada em breve.</p>
+             </div>
+           )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const AdminOverview = () => {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 24, maxWidth: 1200, margin: "0 auto" }}>
+      {/* KPI Cards */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 20 }}>
+         {[
+           { label: "Pacientes Ativos", value: "128", icon: "fa-solid fa-bed", color: C.primary },
+           { label: "Cuidadores em Turno", value: "45", icon: "fa-solid fa-user-nurse", color: C.accent },
+           { label: "Ocorrências (Hoje)", value: "3", icon: "fa-solid fa-triangle-exclamation", color: C.warning },
+           { label: "Alertas Críticos", value: "1", icon: "fa-solid fa-truck-medical", color: C.danger },
+         ].map((kpi, i) => (
+           <div key={i} style={{ ...S.cardElevated, display: "flex", alignItems: "center", gap: 16 }}>
+             <div style={{ width: 56, height: 56, borderRadius: 16, background: `${kpi.color}15`, color: kpi.color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24 }}>
+               <i className={kpi.icon}></i>
+             </div>
+             <div>
+               <div style={{ fontSize: 13, color: C.textMid, marginBottom: 4 }}>{kpi.label}</div>
+               <div style={{ fontFamily: T.display, fontWeight: 900, fontSize: 28, color: C.navy, lineHeight: 1 }}>{kpi.value}</div>
+             </div>
+           </div>
+         ))}
+      </div>
+      
+      <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 20 }}>
+         {/* Monitored Visits */}
+         <div style={{ ...S.cardElevated, padding: 0, overflow: "hidden" }}>
+           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "20px 24px", borderBottom: `1px solid ${C.border}` }}>
+             <div style={{ ...S.sectionTitle, margin: 0, fontSize: 16 }}>Visitas em Andamento</div>
+             <button style={{ ...S.btnOutline, width: "auto", padding: "6px 14px", fontSize: 12 }}>Ver Todas</button>
+           </div>
+           
+           <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
+             <thead>
+               <tr style={{ background: C.bg, fontFamily: T.body, fontSize: 12, color: C.textMid }}>
+                 <th style={{ padding: "12px 24px", fontWeight: 600 }}>Paciente</th>
+                 <th style={{ padding: "12px 24px", fontWeight: 600 }}>Cuidador(a)</th>
+                 <th style={{ padding: "12px 24px", fontWeight: 600 }}>Status</th>
+                 <th style={{ padding: "12px 24px", fontWeight: 600 }}>Último Registro</th>
+               </tr>
+             </thead>
+             <tbody>
+               {[
+                 { p: "Maria da Silva", c: "Ana Lima", status: "ok", last: "Almoço (12:30)" },
+                 { p: "João Ferreira", c: "Carla Santos", status: "warning", last: "Atraso no check-in" },
+                 { p: "Cecília Mendes", c: "Patrícia Souza", status: "ok", last: "Medicação (14:00)" },
+                 { p: "Antônio Rosa", c: "Roberto Dias", status: "danger", last: "Queda leve (11:15)" },
+               ].map((v, i) => (
+                 <tr key={i} style={{ borderBottom: i === 3 ? "none" : `1px solid ${C.border}` }}>
+                   <td style={{ padding: "16px 24px", fontFamily: T.display, fontWeight: 700, color: C.navy, fontSize: 14 }}>{v.p}</td>
+                   <td style={{ padding: "16px 24px", fontSize: 13, color: C.textMid }}>{v.c}</td>
+                   <td style={{ padding: "16px 24px" }}>
+                     {v.status === "ok" && <span style={S.badge(C.success, C.successLight)}><i className="fa-solid fa-check"></i> Normal</span>}
+                     {v.status === "warning" && <span style={S.badge(C.warning, C.warningLight)}><i className="fa-solid fa-clock"></i> Atenção</span>}
+                     {v.status === "danger" && <span style={S.badge(C.danger, C.dangerLight)}><i className="fa-solid fa-triangle-exclamation"></i> Crítico</span>}
+                   </td>
+                   <td style={{ padding: "16px 24px", fontSize: 13, color: C.textMid }}>{v.last}</td>
+                 </tr>
+               ))}
+             </tbody>
+           </table>
+         </div>
+         
+         {/* Action Center */}
+         <div style={{ ...S.cardElevated }}>
+           <div style={{ ...S.sectionTitle, margin: "0 0 16px 0", fontSize: 16 }}>Alertas do Sistema</div>
+           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+             <div style={{ padding: 16, borderRadius: 12, background: C.dangerLight, borderLeft: `4px solid ${C.danger}` }}>
+               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+                 <div style={{ fontFamily: T.display, fontWeight: 800, fontSize: 14, color: C.danger }}>Urgência: Antônio Rosa</div>
+                 <div style={{ fontSize: 12, color: C.danger, fontWeight: 700 }}>11:15</div>
+               </div>
+               <div style={{ fontSize: 13, color: C.textMid, lineHeight: 1.4 }}>Cuidador relatou queda leve sem ferimentos. Requer avaliação de supervisor.</div>
+               <button style={{ ...S.btn, background: C.danger, padding: "8px 16px", width: "auto", marginTop: 12, fontSize: 12 }}>Assumir Caso</button>
+             </div>
+             
+             <div style={{ padding: 16, borderRadius: 12, background: C.warningLight, borderLeft: `4px solid ${C.warning}` }}>
+               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+                 <div style={{ fontFamily: T.display, fontWeight: 800, fontSize: 14, color: C.warning }}>Atraso: João Ferreira</div>
+                 <div style={{ fontSize: 12, color: C.warning, fontWeight: 700 }}>Há 15 min</div>
+               </div>
+               <div style={{ fontSize: 13, color: C.textMid, lineHeight: 1.4 }}>Check-in programado para 13:00 ainda não realizado.</div>
+               <button style={{ ...S.btnOutline, borderColor: C.warning, color: C.warning, padding: "8px 16px", width: "auto", marginTop: 12, fontSize: 12 }}>Notificar Cuidador</button>
+             </div>
+           </div>
+         </div>
+      </div>
+    </div>
+  );
+};
+
 /* ─── APP ROOT ───────────────────────────────────────────────── */
 export default function App() {
+  const [role, setRole] = useState<"family" | "admin" | null>(null);
   const [screen, setScreen] = useState("splash");
   const [prev, setPrev] = useState<string | null>(null);
 
@@ -1043,7 +1219,56 @@ export default function App() {
         button:active { transform: scale(0.97) !important; }
       `}</style>
 
-      {/* Outer shell */}
+      {!role ? (
+        <div style={{
+          height: "100vh", width: "100vw", background: C.bg,
+          display: "flex", alignItems: "center", justifyContent: "center",
+          fontFamily: T.body, padding: 20
+        }}>
+          <div style={{
+            background: "#fff", padding: 40, borderRadius: 24,
+            boxShadow: "0 20px 40px rgba(0,0,0,0.05)",
+            maxWidth: 400, width: "100%", textAlign: "center"
+          }}>
+            <div style={{ marginBottom: 32 }}>
+              <Logo size={70} />
+              <div style={{ fontFamily: T.display, fontWeight: 900, fontSize: 24, color: C.navy, marginTop: 16 }}>
+                Selecionar Perfil
+              </div>
+            </div>
+            
+            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+              <button onClick={() => setRole("family")} style={{
+                ...S.btnOutline, padding: "16px 20px", display: "flex", alignItems: "center", gap: 12,
+                justifyContent: "flex-start", background: C.bg, border: "none"
+              }}>
+                <div style={{ width: 40, height: 40, borderRadius: "50%", background: C.primaryLight, color: C.primary, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>
+                  <i className="fa-solid fa-house-chimney-user"></i>
+                </div>
+                <div style={{ textAlign: "left" }}>
+                  <div style={{ fontFamily: T.display, fontWeight: 800, fontSize: 15, color: C.navy }}>Familiar / Paciente</div>
+                  <div style={{ fontSize: 12, color: C.textMid, fontWeight: 400 }}>Acesso via aplicativo mobile</div>
+                </div>
+              </button>
+              
+              <button onClick={() => setRole("admin")} style={{
+                ...S.btnOutline, padding: "16px 20px", display: "flex", alignItems: "center", gap: 12,
+                justifyContent: "flex-start", background: C.accentLight, border: "none"
+              }}>
+                <div style={{ width: 40, height: 40, borderRadius: "50%", background: "#fff", color: C.accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>
+                  <i className="fa-solid fa-hospital-user"></i>
+                </div>
+                <div style={{ textAlign: "left" }}>
+                  <div style={{ fontFamily: T.display, fontWeight: 800, fontSize: 15, color: C.accent }}>Clínica / Gestão</div>
+                  <div style={{ fontSize: 12, color: C.accent, opacity: 0.8, fontWeight: 400 }}>Painel de administrativo</div>
+                </div>
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : role === "admin" ? (
+        <AdminDashboard onLogout={() => setRole(null)} />
+      ) : (
       <div style={{
         minHeight: "100vh",
         background: "#1A1D23",
@@ -1051,6 +1276,10 @@ export default function App() {
         padding: 20,
         fontFamily: T.body,
       }}>
+        <div style={{ position: "absolute", top: 20, left: 20 }}>
+           <button onClick={() => setRole(null)} style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.2)", color: "#fff", padding: "8px 16px", borderRadius: 8, cursor: "pointer" }}><i className="fa-solid fa-chevron-left" style={{ marginRight: 8 }}></i> Trocar perfil</button>
+        </div>
+
         {/* Phone frame */}
         <div style={{
           width: 390, height: 780,
@@ -1151,6 +1380,7 @@ export default function App() {
           </div>
         </div>
       </div>
+      )}
     </>
   );
 }
