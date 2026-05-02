@@ -1077,7 +1077,12 @@ const AdminDashboard = ({ onLogout }: { onLogout: () => void }) => {
         </div>
         
         <div style={{ flex: 1, overflowY: "auto", padding: 32 }}>
-           {activeTab === "overview" ? <AdminOverview /> : (
+           {activeTab === "overview" ? <AdminOverview /> :
+           activeTab === "patients" ? <AdminPatients /> :
+           activeTab === "caregivers" ? <AdminCaregivers /> :
+           activeTab === "schedule" ? <AdminSchedule /> :
+           activeTab === "alerts" ? <AdminAlerts /> :
+           activeTab === "reports" ? <AdminReports /> : (
              <div style={{ textAlign: "center", padding: 60, color: C.textMid }}>
                 <i className="fa-solid fa-person-digging" style={{ fontSize: 40, marginBottom: 16, color: C.primaryLight }}></i>
                 <div style={{ fontFamily: T.display, fontWeight: 800, fontSize: 20, color: C.navy }}>Em desenvolvimento</div>
@@ -1179,6 +1184,203 @@ const AdminOverview = () => {
     </div>
   );
 };
+
+const AdminPatients = () => (
+  <div style={{ ...S.cardElevated, padding: 0, overflow: "hidden" }}>
+    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "20px 24px", borderBottom: `1px solid ${C.border}` }}>
+      <div style={{ ...S.sectionTitle, margin: 0, fontSize: 18 }}>Gestão de Pacientes</div>
+      <button style={{ ...S.btn, width: "auto", padding: "8px 16px", fontSize: 13, background: C.primary, color: "#fff" }}>
+        <i className="fa-solid fa-plus"></i> Novo Paciente
+      </button>
+    </div>
+    <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
+      <thead>
+        <tr style={{ background: C.bg, fontFamily: T.body, fontSize: 12, color: C.textMid }}>
+          <th style={{ padding: "12px 24px", fontWeight: 600 }}>Nome no Paciente</th>
+          <th style={{ padding: "12px 24px", fontWeight: 600 }}>Idade</th>
+          <th style={{ padding: "12px 24px", fontWeight: 600 }}>Nível de Dependência</th>
+          <th style={{ padding: "12px 24px", fontWeight: 600 }}>Cuidador Base</th>
+          <th style={{ padding: "12px 24px", fontWeight: 600 }}>Status</th>
+          <th style={{ padding: "12px 24px", fontWeight: 600 }}>Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        {[
+          { name: "Maria da Silva", age: 78, level: "Alto", caregiver: "Ana Lima", status: "Ativo" },
+          { name: "João Ferreira", age: 82, level: "Médio", caregiver: "Carla Santos", status: "Ativo" },
+          { name: "Cecília Mendes", age: 75, level: "Baixo", caregiver: "Patrícia Souza", status: "Em Avaliação" },
+          { name: "Antônio Rosa", age: 88, level: "Alto", caregiver: "Roberto Dias", status: "Atenção" },
+          { name: "Luzia Aparecida", age: 80, level: "Médio", caregiver: "Marcos Vinicius", status: "Inativo" },
+        ].map((v, i) => (
+          <tr key={i} style={{ borderBottom: `1px solid ${C.border}` }}>
+            <td style={{ padding: "16px 24px", fontFamily: T.display, fontWeight: 700, color: C.navy, fontSize: 14 }}>{v.name}</td>
+            <td style={{ padding: "16px 24px", fontSize: 13, color: C.textMid }}>{v.age} anos</td>
+            <td style={{ padding: "16px 24px", fontSize: 13, color: C.textMid }}>{v.level}</td>
+            <td style={{ padding: "16px 24px", fontSize: 13, color: C.textMid }}>{v.caregiver}</td>
+            <td style={{ padding: "16px 24px" }}>
+              {v.status === "Ativo" && <span style={S.badge(C.success, C.successLight)}>Ativo</span>}
+              {v.status === "Em Avaliação" && <span style={S.badge(C.info, C.infoLight)}>Em Avaliação</span>}
+              {v.status === "Atenção" && <span style={S.badge(C.warning, C.warningLight)}>Atenção</span>}
+              {v.status === "Inativo" && <span style={S.badge(C.textMid, C.bg)}>Inativo</span>}
+            </td>
+            <td style={{ padding: "16px 24px", fontSize: 13, color: C.primary, cursor: "pointer" }}>
+              <i className="fa-regular fa-pen-to-square"></i>
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+);
+
+const AdminCaregivers = () => (
+  <div style={{ ...S.cardElevated, padding: 0, overflow: "hidden" }}>
+    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "20px 24px", borderBottom: `1px solid ${C.border}` }}>
+      <div style={{ ...S.sectionTitle, margin: 0, fontSize: 18 }}>Cuidadores</div>
+      <button style={{ ...S.btn, width: "auto", padding: "8px 16px", fontSize: 13, background: C.accent, color: "#fff" }}>
+        <i className="fa-solid fa-plus"></i> Novo Cuidador
+      </button>
+    </div>
+    <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
+      <thead>
+        <tr style={{ background: C.bg, fontFamily: T.body, fontSize: 12, color: C.textMid }}>
+          <th style={{ padding: "12px 24px", fontWeight: 600 }}>Nome</th>
+          <th style={{ padding: "12px 24px", fontWeight: 600 }}>Especialidade</th>
+          <th style={{ padding: "12px 24px", fontWeight: 600 }}>Pacientes Ativos</th>
+          <th style={{ padding: "12px 24px", fontWeight: 600 }}>Avaliação</th>
+          <th style={{ padding: "12px 24px", fontWeight: 600 }}>Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        {[
+          { name: "Ana Lima", spec: "Téc. Enfermagem", patients: 2, rating: "4.9" },
+          { name: "Carla Santos", spec: "Enfermeira", patients: 1, rating: "5.0" },
+          { name: "Patrícia Souza", spec: "Cuidadora Especializada", patients: 3, rating: "4.8" },
+          { name: "Roberto Dias", spec: "Fisioterapeuta", patients: 2, rating: "4.9" },
+          { name: "Marcos Vinicius", spec: "Téc. Enfermagem", patients: 0, rating: "4.7" },
+        ].map((v, i) => (
+          <tr key={i} style={{ borderBottom: `1px solid ${C.border}` }}>
+            <td style={{ padding: "16px 24px", fontFamily: T.display, fontWeight: 700, color: C.navy, fontSize: 14 }}>{v.name}</td>
+            <td style={{ padding: "16px 24px", fontSize: 13, color: C.textMid }}>{v.spec}</td>
+            <td style={{ padding: "16px 24px", fontSize: 13, color: C.textMid }}>{v.patients}</td>
+            <td style={{ padding: "16px 24px" }}>
+              <span style={S.badge(C.warning, C.warningLight)}><i className="fa-solid fa-star"></i> {v.rating}</span>
+            </td>
+            <td style={{ padding: "16px 24px", fontSize: 13, color: C.accent, cursor: "pointer" }}>
+              <i className="fa-regular fa-pen-to-square"></i>
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+);
+
+const AdminSchedule = () => (
+  <div style={{ ...S.cardElevated, padding: 0, overflow: "hidden" }}>
+    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "20px 24px", borderBottom: `1px solid ${C.border}` }}>
+      <div style={{ ...S.sectionTitle, margin: 0, fontSize: 18 }}>Escala de Plantões</div>
+      <div style={{ display: "flex", gap: "8px" }}>
+        <button style={{ ...S.btnOutline, width: "auto", padding: "8px 16px", fontSize: 13 }}><i className="fa-regular fa-calendar"></i> Semana Atual</button>
+        <button style={{ ...S.btn, width: "auto", padding: "8px 16px", fontSize: 13, background: C.info, color: "#fff" }}>
+          <i className="fa-solid fa-plus"></i> Agendar
+        </button>
+      </div>
+    </div>
+    <div style={{ padding: "24px", display: "grid", gap: "16px" }}>
+      {[
+         { time: "07:00 - 19:00", patient: "Maria da Silva", caregiver: "Ana Lima", type: "Plantão 12h", status: "Em andamento" },
+         { time: "08:00 - 12:00", patient: "João Ferreira", caregiver: "Carla Santos", type: "Meio Período", status: "Atrasado" },
+         { time: "18:00 - 06:00", patient: "Antônio Rosa", caregiver: "Roberto Dias", type: "Plantão Noturno", status: "Pendente" },
+      ].map((v, i) => (
+        <div key={i} style={{ border: `1px solid ${C.border}`, borderRadius: "12px", padding: "16px 24px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
+            <div style={{ fontWeight: 800, color: C.navy, fontSize: 15, width: 120 }}>{v.time}</div>
+            <div>
+              <div style={{ fontFamily: T.display, fontWeight: 700, color: C.navy, fontSize: 14 }}>{v.patient} &mdash; {v.type}</div>
+              <div style={{ fontSize: 13, color: C.textMid, marginTop: 4 }}><i className="fa-solid fa-user-nurse" style={{ marginRight: 6 }}></i> {v.caregiver}</div>
+            </div>
+          </div>
+          <div>
+            {v.status === "Em andamento" && <span style={S.badge(C.success, C.successLight)}>Em andamento</span>}
+            {v.status === "Atrasado" && <span style={S.badge(C.warning, C.warningLight)}>Atrasado</span>}
+            {v.status === "Pendente" && <span style={S.badge(C.textMid, C.bg)}>Pendente</span>}
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+);
+
+const AdminAlerts = () => (
+   <div style={{ ...S.cardElevated, padding: 0, overflow: "hidden" }}>
+    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "20px 24px", borderBottom: `1px solid ${C.border}` }}>
+      <div style={{ ...S.sectionTitle, margin: 0, fontSize: 18 }}>Central de Alertas</div>
+      <button style={{ ...S.btnOutline, width: "auto", padding: "8px 16px", fontSize: 13 }}><i className="fa-solid fa-filter"></i> Filtrar</button>
+    </div>
+    <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+      {[
+        { patient: "Antônio Rosa", type: "Queda Leve", level: "critical", time: "11:15", desc: "Cuidador relatou queda leve sem ferimentos. Requer avaliação de supervisor." },
+        { patient: "João Ferreira", type: "Atraso no Check-in", level: "warning", time: "Há 15 min", desc: "Check-in programado para 13:00 ainda não realizado." },
+        { patient: "Maria da Silva", type: "Inconsistência em Sinais Vitais", level: "warning", time: "Ontem, 20:30", desc: "Pressão arterial 150/90 reportada pelo cuidador." },
+      ].map((v, i) => (
+        <div key={i} style={{ borderBottom: `1px solid ${C.border}`, padding: "24px", display: "flex", gap: "20px" }}>
+          <div style={{ width: 48, height: 48, borderRadius: "50%", background: v.level === "critical" ? C.dangerLight : C.warningLight, color: v.level === "critical" ? C.danger : C.warning, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, flexShrink: 0 }}>
+            {v.level === "critical" ? <i className="fa-solid fa-triangle-exclamation"></i> : <i className="fa-solid fa-clock"></i>}
+          </div>
+          <div style={{ flex: 1 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+              <div style={{ fontFamily: T.display, fontWeight: 800, fontSize: 15, color: v.level === "critical" ? C.danger : C.warning }}>{v.type}</div>
+              <div style={{ fontSize: 13, color: C.textMid, fontWeight: 600 }}>{v.time}</div>
+            </div>
+            <div style={{ fontSize: 14, color: C.navy, fontWeight: 600, marginBottom: 4 }}>Paciente: {v.patient}</div>
+            <div style={{ fontSize: 13, color: C.textMid, lineHeight: 1.5 }}>{v.desc}</div>
+            
+            <div style={{ marginTop: 16, display: "flex", gap: "10px" }}>
+              <button style={{ ...S.btn, width: "auto", background: v.level === "critical" ? C.danger : C.warning, padding: "8px 16px", fontSize: 12 }}>Visualizar Detalhes</button>
+              <button style={{ ...S.btnOutline, width: "auto", padding: "8px 16px", fontSize: 12 }}>Marcar como Resolvido</button>
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+);
+
+const AdminReports = () => (
+  <div style={{ ...S.cardElevated, padding: "24px" }}>
+    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
+      <div style={{ ...S.sectionTitle, margin: 0, fontSize: 18 }}>Relatórios e Métricas</div>
+      <button style={{ ...S.btnOutline, width: "auto", padding: "8px 16px", fontSize: 13 }}><i className="fa-solid fa-download"></i> Exportar Dados</button>
+    </div>
+    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px" }}>
+      <div style={{ border: `1px solid ${C.border}`, borderRadius: "16px", padding: "24px" }}>
+        <div style={{ fontWeight: 800, color: C.navy, marginBottom: 16 }}>Taxa de Conformidade (Escalas)</div>
+        <div style={{ height: "180px", display: "flex", alignItems: "flex-end", gap: "10px", paddingBottom: "30px", position: "relative", borderBottom: `1px solid ${C.border}` }}>
+          {[98, 95, 99, 94, 97, 85, 96].map((h, j) => (
+             <div key={j} style={{ flex: 1, background: C.primaryLight, height: `${h}%`, borderRadius: "4px 4px 0 0", position: "relative" }}>
+                 <div style={{ position: "absolute", bottom: "100%", left: 0, width: "100%", textAlign: "center", fontSize: 10, color: C.primary, marginBottom: 4 }}>{h}%</div>
+                 <div style={{ position: "absolute", top: "100%", left: 0, width: "100%", textAlign: "center", fontSize: 11, color: C.textMid, marginTop: 8 }}>{['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'][j]}</div>
+             </div>
+          ))}
+        </div>
+      </div>
+      <div style={{ border: `1px solid ${C.border}`, borderRadius: "16px", padding: "24px" }}>
+        <div style={{ fontWeight: 800, color: C.navy, marginBottom: 16 }}>Atendimentos por Gravidade</div>
+        <div style={{ height: "180px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+           <div style={{ width: "140px", height: "140px", borderRadius: "50%", background: `conic-gradient(${C.success} 0% 70%, ${C.warning} 70% 90%, ${C.danger} 90% 100%)`, position: "relative" }}>
+              <div style={{ position: "absolute", inset: "20px", background: "#fff", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, fontWeight: 800, color: C.navy }}>312</div>
+           </div>
+        </div>
+        <div style={{ display: "flex", justifyContent: "center", gap: "16px", marginTop: "16px" }}>
+           <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: 12, color: C.textMid }}><div style={{ width: 10, height: 10, borderRadius: "50%", background: C.success }}></div> Normal</div>
+           <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: 12, color: C.textMid }}><div style={{ width: 10, height: 10, borderRadius: "50%", background: C.warning }}></div> Atenção</div>
+           <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: 12, color: C.textMid }}><div style={{ width: 10, height: 10, borderRadius: "50%", background: C.danger }}></div> Crítico</div>
+        </div>
+      </div>
+    </div>
+  </div>
+);
 
 /* ─── APP ROOT ───────────────────────────────────────────────── */
 export default function App() {
