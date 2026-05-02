@@ -1008,22 +1008,38 @@ const StatusBar = () => {
 /* ─── ADMIN DASHBOARD ───────────────────────────────────────── */
 const AdminDashboard = ({ onLogout }: { onLogout: () => void }) => {
   const [activeTab, setActiveTab] = useState("overview");
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth <= 1024 && window.innerWidth > 768) {
+        setIsSidebarCollapsed(true);
+      } else if (window.innerWidth > 1024) {
+        setIsSidebarCollapsed(false);
+      }
+    };
+    handleResize(); // Initial check
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   return (
-    <div style={{ display: "flex", height: "100vh", width: "100vw", background: C.bg, fontFamily: T.body, overflow: "hidden" }}>
+    <div id="admin-layout" style={{ display: "flex", height: "100vh", width: "100vw", background: C.bg, fontFamily: T.body, overflow: "hidden" }}>
       {/* Sidebar */}
-      <div style={{ width: 260, background: C.surface, borderRight: `1px solid ${C.border}`, display: "flex", flexDirection: "column" }}>
-        <div style={{ padding: 24, display: "flex", alignItems: "center", gap: 12, borderBottom: `1px solid ${C.border}` }}>
+      <div id="admin-sidebar" style={{ width: isSidebarCollapsed ? 80 : 260, transition: "width 0.3s ease", background: C.surface, borderRight: `1px solid ${C.border}`, display: "flex", flexDirection: "column", flexShrink: 0 }}>
+        <div id="admin-sidebar-top" style={{ padding: "0 24px", display: "flex", alignItems: "center", justifyContent: isSidebarCollapsed ? "center" : "flex-start", gap: 12, borderBottom: `1px solid ${C.border}`, height: 70, boxSizing: "border-box", overflow: "hidden" }}>
           <div style={{ background: C.primary, width: 36, height: 36, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", flexShrink: 0 }}>
              <i className="fa-solid fa-shield-heart" style={{ fontSize: 20 }}></i>
           </div>
-          <div>
+          {!isSidebarCollapsed && (
+          <div style={{ whiteSpace: "nowrap" }}>
             <div style={{ fontFamily: T.display, fontWeight: 900, fontSize: 18, color: C.navy, letterSpacing: -0.5 }}>CuidarApp</div>
             <div style={{ fontSize: 11, color: C.textMid }}>Gestão de Clínicas</div>
           </div>
+          )}
         </div>
         
-        <div style={{ flex: 1, padding: "24px 16px", display: "flex", flexDirection: "column", gap: 8 }}>
+        <div id="admin-sidebar-menu" style={{ flex: 1, padding: "24px 16px", display: "flex", flexDirection: "column", gap: 8, overflowX: "hidden" }}>
           {[
             { id: "overview", icon: "fa-solid fa-chart-line", label: "Visão Geral" },
             { id: "patients", icon: "fa-solid fa-bed-pulse", label: "Pacientes" },
@@ -1032,32 +1048,39 @@ const AdminDashboard = ({ onLogout }: { onLogout: () => void }) => {
             { id: "alerts", icon: "fa-solid fa-bell", label: "Alertas" },
             { id: "reports", icon: "fa-solid fa-file-invoice", label: "Relatórios" },
           ].map(t => (
-            <button key={t.id} onClick={() => setActiveTab(t.id)} style={{
-              display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", borderRadius: 12, cursor: "pointer",
+            <button key={t.id} onClick={() => setActiveTab(t.id)} title={isSidebarCollapsed ? t.label : undefined} style={{
+              display: "flex", alignItems: "center", justifyContent: isSidebarCollapsed ? "center" : "flex-start", gap: isSidebarCollapsed ? 0 : 12, padding: "12px 16px", borderRadius: 12, cursor: "pointer",
               border: "none", background: activeTab === t.id ? C.primaryLight : "transparent",
               color: activeTab === t.id ? C.primary : C.textMid, fontFamily: T.display, fontWeight: 700, fontSize: 14,
-              transition: "all 0.2s"
+              transition: "all 0.2s", position: "relative"
             }}>
               <i className={t.icon} style={{ fontSize: 16, width: 20, textAlign: "center" }}></i>
-              <span style={{ flex: 1, textAlign: "left" }}>{t.label}</span>
+              {!isSidebarCollapsed && <span style={{ flex: 1, textAlign: "left", whiteSpace: "nowrap" }}>{t.label}</span>}
               {t.id === "alerts" && (
-                <div style={{ background: C.danger, color: "#fff", fontSize: 10, padding: "3px 8px", borderRadius: 10 }}>2</div>
+                <div style={{ 
+                  background: C.danger, color: "#fff", fontSize: 10, padding: "3px 8px", borderRadius: 10,
+                  ...(isSidebarCollapsed ? { position: "absolute", top: 4, right: 8, padding: "2px 5px", fontSize: 8 } : {})
+                 }}>2</div>
               )}
             </button>
           ))}
         </div>
         
-        <div style={{ padding: 24, borderTop: `1px solid ${C.border}` }}>
-          <button onClick={onLogout} style={{ border: "none", background: "transparent", color: C.danger, display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontFamily: T.display, fontWeight: 700 }}>
-             <i className="fa-solid fa-arrow-right-from-bracket"></i> Sair do Painel
+        <div id="admin-sidebar-logout" style={{ padding: 24, borderTop: `1px solid ${C.border}`, overflow: "hidden" }}>
+          <button onClick={onLogout} title={isSidebarCollapsed ? "Sair" : undefined} style={{ border: "none", background: "transparent", color: C.danger, display: "flex", alignItems: "center", justifyContent: isSidebarCollapsed ? "center" : "flex-start", width: "100%", gap: 8, cursor: "pointer", fontFamily: T.display, fontWeight: 700 }}>
+             <i className="fa-solid fa-arrow-right-from-bracket" style={{ fontSize: 16 }}></i>
+             {!isSidebarCollapsed && <span style={{ whiteSpace: "nowrap" }}>Sair do Painel</span>}
           </button>
         </div>
       </div>
       
       {/* Main Content */}
       <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
-        <div style={{ height: 70, background: C.surface, borderBottom: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 32px" }}>
-           <div style={{ fontFamily: T.display, fontWeight: 800, fontSize: 20, color: C.navy }}>
+        <div id="admin-header" style={{ height: 70, background: C.surface, borderBottom: `1px solid ${C.border}`, display: "flex", alignItems: "center", gap: 16, padding: "0 32px", flexShrink: 0 }}>
+           <button id="admin-sidebar-toggle" onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)} style={{ background: "transparent", border: "none", cursor: "pointer", fontSize: 20, color: C.textMid, display: "flex", alignItems: "center", justifyContent: "center", width: 36, height: 36, borderRadius: "50%", transition: "all 0.2s" }} onMouseOver={(e) => e.currentTarget.style.background = C.bg} onMouseOut={(e) => e.currentTarget.style.background = "transparent"}>
+             <i className="fa-solid fa-bars"></i>
+           </button>
+           <div style={{ flex: 1, fontFamily: T.display, fontWeight: 800, fontSize: 20, color: C.navy }}>
              Painel de Controle
            </div>
            
@@ -1076,7 +1099,7 @@ const AdminDashboard = ({ onLogout }: { onLogout: () => void }) => {
            </div>
         </div>
         
-        <div style={{ flex: 1, overflowY: "auto", padding: 32 }}>
+        <div id="admin-content" style={{ flex: 1, overflowY: "auto", padding: 32 }}>
            {activeTab === "overview" ? <AdminOverview /> :
            activeTab === "patients" ? <AdminPatients /> :
            activeTab === "caregivers" ? <AdminCaregivers /> :
@@ -1099,7 +1122,7 @@ const AdminOverview = () => {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 24, maxWidth: 1200, margin: "0 auto" }}>
       {/* KPI Cards */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 20 }}>
+      <div className="admin-grid-4" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 20 }}>
          {[
            { label: "Pacientes Ativos", value: "128", icon: "fa-solid fa-bed", color: C.primary },
            { label: "Cuidadores em Turno", value: "45", icon: "fa-solid fa-user-nurse", color: C.accent },
@@ -1118,7 +1141,7 @@ const AdminOverview = () => {
          ))}
       </div>
       
-      <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 20 }}>
+      <div className="admin-grid-2" style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 20 }}>
          {/* Monitored Visits */}
          <div style={{ ...S.cardElevated, padding: 0, overflow: "hidden" }}>
            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "20px 24px", borderBottom: `1px solid ${C.border}` }}>
@@ -1126,6 +1149,7 @@ const AdminOverview = () => {
              <button style={{ ...S.btnOutline, width: "auto", padding: "6px 14px", fontSize: 12 }}>Ver Todas</button>
            </div>
            
+           <div className="admin-table-wrapper">
            <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
              <thead>
                <tr style={{ background: C.bg, fontFamily: T.body, fontSize: 12, color: C.textMid }}>
@@ -1155,6 +1179,7 @@ const AdminOverview = () => {
                ))}
              </tbody>
            </table>
+           </div>
          </div>
          
          {/* Action Center */}
@@ -1193,6 +1218,7 @@ const AdminPatients = () => (
         <i className="fa-solid fa-plus"></i> Novo Paciente
       </button>
     </div>
+    <div className="admin-table-wrapper">
     <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
       <thead>
         <tr style={{ background: C.bg, fontFamily: T.body, fontSize: 12, color: C.textMid }}>
@@ -1230,6 +1256,7 @@ const AdminPatients = () => (
         ))}
       </tbody>
     </table>
+    </div>
   </div>
 );
 
@@ -1241,6 +1268,7 @@ const AdminCaregivers = () => (
         <i className="fa-solid fa-plus"></i> Novo Cuidador
       </button>
     </div>
+    <div className="admin-table-wrapper">
     <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
       <thead>
         <tr style={{ background: C.bg, fontFamily: T.body, fontSize: 12, color: C.textMid }}>
@@ -1273,6 +1301,7 @@ const AdminCaregivers = () => (
         ))}
       </tbody>
     </table>
+    </div>
   </div>
 );
 
@@ -1293,8 +1322,8 @@ const AdminSchedule = () => (
          { time: "08:00 - 12:00", patient: "João Ferreira", caregiver: "Carla Santos", type: "Meio Período", status: "Atrasado" },
          { time: "18:00 - 06:00", patient: "Antônio Rosa", caregiver: "Roberto Dias", type: "Plantão Noturno", status: "Pendente" },
       ].map((v, i) => (
-        <div key={i} style={{ border: `1px solid ${C.border}`, borderRadius: "12px", padding: "16px 24px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
+        <div key={i} className="admin-flex-row" style={{ border: `1px solid ${C.border}`, borderRadius: "12px", padding: "16px 24px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div className="admin-flex-row" style={{ display: "flex", alignItems: "center", gap: 20 }}>
             <div style={{ fontWeight: 800, color: C.navy, fontSize: 15, width: 120 }}>{v.time}</div>
             <div>
               <div style={{ fontFamily: T.display, fontWeight: 700, color: C.navy, fontSize: 14 }}>{v.patient} &mdash; {v.type}</div>
@@ -1328,7 +1357,7 @@ const AdminAlerts = () => (
           <div style={{ width: 48, height: 48, borderRadius: "50%", background: v.level === "critical" ? C.dangerLight : C.warningLight, color: v.level === "critical" ? C.danger : C.warning, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, flexShrink: 0 }}>
             {v.level === "critical" ? <i className="fa-solid fa-triangle-exclamation"></i> : <i className="fa-solid fa-clock"></i>}
           </div>
-          <div style={{ flex: 1 }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
               <div style={{ fontFamily: T.display, fontWeight: 800, fontSize: 15, color: v.level === "critical" ? C.danger : C.warning }}>{v.type}</div>
               <div style={{ fontSize: 13, color: C.textMid, fontWeight: 600 }}>{v.time}</div>
@@ -1353,7 +1382,7 @@ const AdminReports = () => (
       <div style={{ ...S.sectionTitle, margin: 0, fontSize: 18 }}>Relatórios e Métricas</div>
       <button style={{ ...S.btnOutline, width: "auto", padding: "8px 16px", fontSize: 13 }}><i className="fa-solid fa-download"></i> Exportar Dados</button>
     </div>
-    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px" }}>
+    <div className="admin-grid-2-even" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px" }}>
       <div style={{ border: `1px solid ${C.border}`, borderRadius: "16px", padding: "24px" }}>
         <div style={{ fontWeight: 800, color: C.navy, marginBottom: 16 }}>Taxa de Conformidade (Escalas)</div>
         <div style={{ height: "180px", display: "flex", alignItems: "flex-end", gap: "10px", paddingBottom: "30px", position: "relative", borderBottom: `1px solid ${C.border}` }}>
@@ -1419,6 +1448,37 @@ export default function App() {
           to   { opacity: 1; transform: translateY(0); }
         }
         button:active { transform: scale(0.97) !important; }
+
+        /* Admin Dashboard Responsiveness */
+        @media (max-width: 1024px) {
+          .admin-grid-4 { grid-template-columns: repeat(2, 1fr) !important; }
+          .admin-grid-2 { grid-template-columns: 1fr !important; }
+          .admin-grid-2-even { grid-template-columns: 1fr !important; }
+          .admin-table-wrapper { overflow-x: auto; display: block; width: 100%; white-space: nowrap; }
+          .admin-flex-row { flex-direction: column !important; align-items: flex-start !important; gap: 12px !important; }
+        }
+        @media (max-width: 768px) {
+          #admin-layout { flex-direction: column !important; }
+          #admin-sidebar { width: 100% !important; border-right: none !important; border-bottom: 1px solid ${C.border} !important; height: auto !important; }
+          #admin-sidebar-top { border-bottom: none !important; padding: 16px 24px !important; justify-content: flex-start !important; height: auto !important; }
+          #admin-sidebar-top > div:nth-child(2) { display: block !important; }
+          #admin-sidebar-menu { flex-direction: row !important; padding: 8px 24px 16px 24px !important; gap: 8px !important; overflow-x: auto; flex: none !important; }
+          #admin-sidebar-menu > button { white-space: nowrap; padding: 8px 16px !important; justify-content: center !important; gap: 8px !important; }
+          #admin-sidebar-menu > button > span { display: inline !important; }
+          #admin-sidebar-logout { border-top: none !important; padding: 0 24px 16px 24px !important; display: flex !important; justify-content: flex-end !important; }
+          #admin-sidebar-logout > button { width: auto !important; justify-content: flex-end !important; }
+          #admin-sidebar-logout > button > span { display: inline !important; }
+          #admin-header { padding: 0 24px !important; height: 60px !important; }
+          #admin-sidebar-toggle { display: none !important; }
+          #admin-content { padding: 24px !important; }
+        }
+        @media (max-width: 600px) {
+          .admin-grid-4 { grid-template-columns: 1fr !important; }
+          #admin-sidebar-top { padding: 16px !important; }
+          #admin-sidebar-menu { padding: 8px 16px 16px 16px !important; }
+          #admin-header { padding: 0 16px !important; }
+          #admin-content { padding: 16px !important; }
+        }
       `}</style>
 
       {!role ? (
