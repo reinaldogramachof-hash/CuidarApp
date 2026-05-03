@@ -26,7 +26,10 @@ if (-Not (Test-Path $ReportsDir)) {
 # --- 1. Verificar estado do codigo ---
 Write-Host "[1/6] Verificando estado do codigo..." -ForegroundColor Yellow
 
-$ModifiedFiles = git diff --name-only HEAD$UntrackedFiles = git ls-files --others --exclude-standard$LastCommit = git log --oneline -1$Branch = git rev-parse --abbrev-ref HEAD
+$ModifiedFiles = git diff --name-only HEAD
+$UntrackedFiles = git ls-files --others --exclude-standard
+$LastCommit = git log --oneline -1
+$Branch = git rev-parse --abbrev-ref HEAD
 Write-Host "  Branch: $Branch" -ForegroundColor White
 Write-Host "  Ultimo commit: $LastCommit" -ForegroundColor White
 

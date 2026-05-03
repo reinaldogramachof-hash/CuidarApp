@@ -3,7 +3,7 @@
 # Uso: .\scripts\session-start.ps1
 # =============================================================================
 
-$ErrorActionPreference = "Stop"
+$ErrorActionPreference = "Continue"
 $ProjectRoot = Split-Path -Parent $PSScriptRoot
 $ReportsDir = Join-Path $ProjectRoot "docs\session-reports"
 $Date = Get-Date -Format "yyyy-MM-dd"
@@ -23,9 +23,9 @@ Write-Host "[1/5] Verificando estado do repositório..." -ForegroundColor Yellow
 
 Set-Location $ProjectRoot
 
-$GitStatus = git status --short 2>&1
-$LastCommit = git log --oneline -1 2>&1
-$Branch = git rev-parse --abbrev-ref HEAD 2>&1
+$GitStatus = git status --short
+$LastCommit = git log --oneline -1
+$Branch = git rev-parse --abbrev-ref HEAD
 
 Write-Host "  Branch atual: $Branch" -ForegroundColor White
 Write-Host "  Último commit: $LastCommit" -ForegroundColor White
@@ -126,7 +126,6 @@ if (Test-Path $GRAPHIFY) {
         Write-Host "  (Isso requer ANTHROPIC_API_KEY configurada no ambiente)" -ForegroundColor Gray
     }
 
-    Write-Host ""
     Write-Host "  Iniciando graphify watch em background..." -ForegroundColor Gray
     Start-Process -FilePath $GRAPHIFY -ArgumentList "watch", $ProjectRoot -WindowStyle Hidden
     Write-Host "  Graphify watch: ATIVO (auto-sync ativado)" -ForegroundColor Green

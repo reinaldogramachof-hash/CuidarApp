@@ -8,7 +8,13 @@
       "Read(//c/Users/reina/.agents/skills/graphify/**)",
       "Bash(git init *)",
       "Bash(git remote *)",
-      "Bash(git add *)"
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)",
+      "PowerShell(cd \"c:\\\\Users\\\\reina\\\\OneDrive\\\\Desktop\\\\Projetos\\\\CuidarApp\"; powershell -ExecutionPolicy Bypass -File \".\\\\scripts\\\\session-end.ps1\")",
+      "PowerShell(cd \"c:\\\\Users\\\\reina\\\\OneDrive\\\\Desktop\\\\Projetos\\\\CuidarApp\"; powershell -ExecutionPolicy Bypass -File \".\\\\scripts\\\\session-end.ps1\" 2>&1)",
+      "Bash(npx tsc *)",
+      "Bash(timeout 15 npm run dev)"
     ]
   }
 }

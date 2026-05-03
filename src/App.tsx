@@ -1,5 +1,13 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "motion/react";
+import { Routes, Route, Navigate } from 'react-router-dom'
+import LoginPage from './modules/auth/LoginPage'
+import UnauthorizedPage from './modules/auth/UnauthorizedPage'
+import ProtectedRoute from './components/layout/ProtectedRoute'
+import AdminShell from './modules/admin/AdminShell.tsx'
+import CaregiverShell from './modules/caregiver/CaregiverShell.tsx'
+import FamilyShell from './modules/family/FamilyShell.tsx'
+import { useAuth } from './hooks/useAuth'
 
 /* ─── GOOGLE FONTS ─────────────────────────────────────────── */
 const FontLoader = () => {
@@ -14,34 +22,7 @@ const FontLoader = () => {
 };
 
 /* ─── DESIGN TOKENS ─────────────────────────────────────────── */
-const C = {
-  primary: "#1565C0",
-  primaryDark: "#0D47A1",
-  primaryLight: "#E3F2FD",
-  primaryMid: "#BBDEFB",
-  accent: "#00897B",
-  accentLight: "#E0F2F1",
-  warm: "#FFF8F0",
-  surface: "#FFFFFF",
-  bg: "#F4F7FB",
-  navy: "#1A237E",
-  textMid: "#546E7A",
-  textLight: "#90A4AE",
-  border: "#E0E7EF",
-  warning: "#FF8F00",
-  warningLight: "#FFF8E1",
-  danger: "#E53935",
-  dangerLight: "#FFEBEE",
-  success: "#2E7D32",
-  successLight: "#E8F5E9",
-  info: "#0277BD",
-  infoLight: "#E1F5FE",
-};
-
-const T = {
-  display: "'Nunito', sans-serif",
-  body: "'DM Sans', sans-serif",
-};
+import { C, T } from "./utils/tokens";
 
 /* ─── MOCK DATA ─────────────────────────────────────────────── */
 const patient = {
@@ -1411,31 +1392,25 @@ const AdminReports = () => (
   </div>
 );
 
+/* ─── ROUTING HELPERS ────────────────────────────────────────── */
+function RootRedirect() {
+  const { user, profile, loading } = useAuth()
+  if (loading) return null
+  if (!user) return <Navigate to="/login" replace />
+  if (!profile) return <Navigate to="/unauthorized" replace />
+  if (profile.role === 'admin') return <Navigate to="/admin" replace />
+  if (profile.role === 'caregiver') return <Navigate to="/caregiver" replace />
+  if (profile.role === 'family') return <Navigate to="/family" replace />
+  return <Navigate to="/unauthorized" replace />
+}
+
 /* ─── APP ROOT ───────────────────────────────────────────────── */
 export default function App() {
-  const [role, setRole] = useState<"family" | "admin" | null>(null);
+  // Mantemos estados antigos para não quebrar referências internas se houverem, 
+  // mas o roteamento agora é via React Router
   const [screen, setScreen] = useState("splash");
-  const [prev, setPrev] = useState<string | null>(null);
-
-  const navigate = (to: string) => {
-    setPrev(screen);
-    setScreen(to);
-  };
-
   const isApp = screen !== "splash";
-
-  const renderScreen = () => {
-    switch (screen) {
-      case "splash": return <SplashScreen onEnter={() => navigate("dashboard")} />;
-      case "dashboard": return <DashboardScreen onAlerts={() => navigate("alertas")} />;
-      case "saude": return <SaudeScreen />;
-      case "agenda": return <AgendaScreen />;
-      case "relatorios": return <RelatoriosScreen />;
-      case "alertas": return <AlertasScreen />;
-      case "perfil": return <PerfilScreen />;
-      default: return null;
-    }
-  };
+  const navigate = (to: string) => setScreen(to);
 
   return (
     <>
@@ -1516,111 +1491,24 @@ export default function App() {
         }
       `}</style>
 
-      {!role ? (
-        <div style={{
-          height: "100vh", width: "100vw", background: C.bg,
-          display: "flex", alignItems: "center", justifyContent: "center",
-          fontFamily: T.body, padding: 20
-        }}>
-          <div style={{
-            background: "#fff", padding: 40, borderRadius: 24,
-            boxShadow: "0 20px 40px rgba(0,0,0,0.05)",
-            maxWidth: 400, width: "100%", textAlign: "center"
-          }}>
-            <div style={{ marginBottom: 32 }}>
-              <Logo size={70} />
-              <div style={{ fontFamily: T.display, fontWeight: 900, fontSize: 24, color: C.navy, marginTop: 16 }}>
-                Selecionar Perfil
-              </div>
-            </div>
-            
-            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-              <button onClick={() => setRole("family")} style={{
-                ...S.btnOutline, padding: "16px 20px", display: "flex", alignItems: "center", gap: 12,
-                justifyContent: "flex-start", background: C.bg, border: "none"
-              }}>
-                <div style={{ width: 40, height: 40, borderRadius: "50%", background: C.primaryLight, color: C.primary, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>
-                  <i className="fa-solid fa-house-chimney-user"></i>
-                </div>
-                <div style={{ textAlign: "left" }}>
-                  <div style={{ fontFamily: T.display, fontWeight: 800, fontSize: 15, color: C.navy }}>Familiar / Paciente</div>
-                  <div style={{ fontSize: 12, color: C.textMid, fontWeight: 400 }}>Acesso via aplicativo mobile</div>
-                </div>
-              </button>
-              
-              <button onClick={() => setRole("admin")} style={{
-                ...S.btnOutline, padding: "16px 20px", display: "flex", alignItems: "center", gap: 12,
-                justifyContent: "flex-start", background: C.accentLight, border: "none"
-              }}>
-                <div style={{ width: 40, height: 40, borderRadius: "50%", background: "#fff", color: C.accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>
-                  <i className="fa-solid fa-hospital-user"></i>
-                </div>
-                <div style={{ textAlign: "left" }}>
-                  <div style={{ fontFamily: T.display, fontWeight: 800, fontSize: 15, color: C.accent }}>Clínica / Gestão</div>
-                  <div style={{ fontSize: 12, color: C.accent, opacity: 0.8, fontWeight: 400 }}>Painel de administrativo</div>
-                </div>
-              </button>
-            </div>
-          </div>
-        </div>
-      ) : role === "admin" ? (
-        <AdminDashboard onLogout={() => setRole(null)} />
-      ) : (
-      <div className="mobile-app-wrapper">
-        <div className="mobile-header-btn">
-           <button onClick={() => setRole(null)} style={{ background: C.surface, border: `1px solid ${C.border}`, color: C.navy, padding: "8px 16px", borderRadius: 8, cursor: "pointer", boxShadow: "0 4px 6px rgba(0,0,0,0.05)", fontWeight: 600 }}><i className="fa-solid fa-chevron-left" style={{ marginRight: 8 }}></i> Trocar perfil</button>
-        </div>
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/unauthorized" element={<UnauthorizedPage />} />
 
-        {/* App container */}
-        <div className="mobile-phone-frame">
-          <div style={{ paddingTop: 24, paddingBottom: 16 }}></div>
+        <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
+          <Route path="/admin/*" element={<AdminShell />} />
+        </Route>
 
-          {/* Back button for sub-screens */}
-          {screen === "alertas" && (
-            <div style={{
-              padding: "10px 20px 0",
-              background: C.surface,
-            }}>
-              <button onClick={() => navigate("dashboard")} style={{
-                background: C.bg, border: "none", borderRadius: 10, padding: "6px 12px",
-                fontFamily: T.body, fontWeight: 600, fontSize: 13, color: C.navy, cursor: "pointer",
-                display: "flex", alignItems: "center", gap: 6,
-              }}>
-                <i className="fa-solid fa-chevron-left"></i> Voltar
-              </button>
-            </div>
-          )}
+        <Route element={<ProtectedRoute allowedRoles={['caregiver']} />}>
+          <Route path="/caregiver/*" element={<CaregiverShell />} />
+        </Route>
 
-          {/* Screen content */}
-          <div style={{ flex: 1, overflow: "hidden", background: C.bg, position: "relative" }}>
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={screen}
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                transition={{ duration: 0.25, ease: "easeInOut" }}
-                style={{
-                  position: "absolute",
-                  inset: 0,
-                  overflowY: "auto",
-                }}
-              >
-                {renderScreen()}
-              </motion.div>
-            </AnimatePresence>
-          </div>
+        <Route element={<ProtectedRoute allowedRoles={['family']} />}>
+          <Route path="/family/*" element={<FamilyShell />} />
+        </Route>
 
-          {/* Bottom nav (only for main app screens) */}
-          {isApp && screen !== "alertas" && (
-            <BottomNav
-              active={screen}
-              onChange={navigate}
-            />
-          )}
-        </div>
-      </div>
-      )}
+        <Route path="*" element={<RootRedirect />} />
+      </Routes>
     </>
   );
 }

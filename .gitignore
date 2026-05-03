@@ -28,3 +28,6 @@ graphify-out/
 
 # Arquivos temporários do Graphify gerados na raiz
 _COMMUNITY_*.md
+
+# Documentos locais
+*.pdf
