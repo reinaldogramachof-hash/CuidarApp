@@ -1,0 +1,30 @@
+node_modules/
+build/
+dist/
+coverage/
+.DS_Store
+*.log
+
+# Variáveis de ambiente (nunca commitar)
+.env*
+!.env.example
+
+# Supabase local
+supabase/.branches
+supabase/.temp
+
+# Reports de sessão gerados localmente (commitar apenas após aprovação)
+# docs/session-reports/  ← descomente se preferir não versionar os reports
+
+# Arquivos de sistema
+Thumbs.db
+
+# Graphify — grafo gerado localmente (rebuildar com: graphify update .)
+graphify-out/
+
+# Obsidian — configuração local do editor
+.obsidian/
+*.canvas
+
+# Arquivos temporários do Graphify gerados na raiz
+_COMMUNITY_*.md

@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(pip --version)",
+      "PowerShell($GRAPHIFY_EXE = \"C:\\\\Users\\\\reina\\\\AppData\\\\Local\\\\Packages\\\\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\\\\LocalCache\\\\local-packages\\\\Python313\\\\Scripts\\\\graphify.exe\"; & $GRAPHIFY_EXE --help 2>&1)",
+      "Read(//c/Users/reina/.agents/skills/graphify/**)",
+      "Bash(git init *)",
+      "Bash(git remote *)",
+      "Bash(git add *)"
+    ]
+  }
+}
