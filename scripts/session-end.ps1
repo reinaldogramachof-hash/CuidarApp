@@ -1,9 +1,9 @@
 # =============================================================================
-# CuidarApp — Script de Fim de Sessão
+# CuidarApp - Script de Fim de Sessao
 # Uso: .\scripts\session-end.ps1
 # =============================================================================
 
-$ErrorActionPreference = "Stop"
+$ErrorActionPreference = "Continue"
 $ProjectRoot = Split-Path -Parent $PSScriptRoot
 $ReportsDir = Join-Path $ProjectRoot "docs\session-reports"
 $Date = Get-Date -Format "yyyy-MM-dd"
@@ -12,7 +12,7 @@ $ReportFile = Join-Path $ReportsDir "$Date.md"
 
 Write-Host ""
 Write-Host "=============================================" -ForegroundColor Magenta
-Write-Host "  CuidarApp — FIM DE SESSÃO" -ForegroundColor Magenta
+Write-Host "  CuidarApp - FIM DE SESSAO" -ForegroundColor Magenta
 Write-Host "  $DateTime" -ForegroundColor Magenta
 Write-Host "=============================================" -ForegroundColor Magenta
 Write-Host ""
@@ -23,32 +23,26 @@ if (-Not (Test-Path $ReportsDir)) {
     New-Item -ItemType Directory -Path $ReportsDir | Out-Null
 }
 
-# --- 1. Verificar estado do código ---
-Write-Host "[1/6] Verificando estado do código..." -ForegroundColor Yellow
+# --- 1. Verificar estado do codigo ---
+Write-Host "[1/6] Verificando estado do codigo..." -ForegroundColor Yellow
 
-$GitStatus = git status --short 2>&1
-$ModifiedFiles = git diff --name-only HEAD 2>&1
-$UntrackedFiles = git ls-files --others --exclude-standard 2>&1
-$LastCommit = git log --oneline -1 2>&1
-$Branch = git rev-parse --abbrev-ref HEAD 2>&1
-
+$ModifiedFiles = git diff --name-only HEAD$UntrackedFiles = git ls-files --others --exclude-standard$LastCommit = git log --oneline -1$Branch = git rev-parse --abbrev-ref HEAD
 Write-Host "  Branch: $Branch" -ForegroundColor White
-Write-Host "  Último commit: $LastCommit" -ForegroundColor White
+Write-Host "  Ultimo commit: $LastCommit" -ForegroundColor White
 
 if ($ModifiedFiles) {
-    Write-Host "  Arquivos modificados nesta sessão:" -ForegroundColor Yellow
+    Write-Host "  Arquivos modificados nesta sessao:" -ForegroundColor Yellow
     $ModifiedFiles | ForEach-Object { Write-Host "    $_" -ForegroundColor Gray }
 } else {
     Write-Host "  Nenhum arquivo modificado." -ForegroundColor Gray
 }
 
-# --- 2. Verificações de segurança ---
+# --- 2. Verificacoes de seguranca ---
 Write-Host ""
-Write-Host "[2/6] Verificações de segurança..." -ForegroundColor Yellow
+Write-Host "[2/6] Verificacoes de seguranca..." -ForegroundColor Yellow
 
 $SecurityIssues = @()
 
-# Verificar secrets hardcoded em arquivos modificados
 if ($ModifiedFiles) {
     $SecretPatterns = @("api_key\s*=", "apiKey\s*:", "password\s*=", "service_role", "secret\s*=")
     foreach ($File in $ModifiedFiles) {
@@ -57,159 +51,123 @@ if ($ModifiedFiles) {
             $Content = Get-Content $FullPath -Raw -ErrorAction SilentlyContinue
             foreach ($Pattern in $SecretPatterns) {
                 if ($Content -match $Pattern) {
-                    $SecurityIssues += "POSSÍVEL SECRET em $File (padrão: $Pattern)"
+                    $SecurityIssues += "POSSIVEL SECRET em $File (padrao: $Pattern)"
                 }
             }
         }
     }
 }
 
-# Verificar .env.local no git
 $GitIgnore = Join-Path $ProjectRoot ".gitignore"
 if (Test-Path $GitIgnore) {
     $IgnoreContent = Get-Content $GitIgnore -Raw
-    if ($IgnoreContent -notmatch "\.env\.local") {
-        $SecurityIssues += ".env.local NÃO está no .gitignore!"
+    if ($IgnoreContent -notmatch "\.env\*" -and $IgnoreContent -notmatch "\.env\.local") {
+        $SecurityIssues += ".env.local NAO esta no .gitignore!"
     }
 }
 
 if ($SecurityIssues.Count -gt 0) {
-    Write-Host "  ALERTAS DE SEGURANÇA DETECTADOS:" -ForegroundColor Red
+    Write-Host "  ALERTAS DE SEGURANCA DETECTADOS:" -ForegroundColor Red
     $SecurityIssues | ForEach-Object { Write-Host "  !! $_" -ForegroundColor Red }
     Write-Host ""
-    Write-Host "  SESSÃO BLOQUEADA: Resolva os alertas antes de commitar." -ForegroundColor Red
+    Write-Host "  SESSAO BLOQUEADA: Resolva os alertas antes de commitar." -ForegroundColor Red
 } else {
-    Write-Host "  Nenhum problema de segurança detectado." -ForegroundColor Green
+    Write-Host "  Nenhum problema de seguranca detectado." -ForegroundColor Green
 }
 
 # --- 3. Linter ---
 Write-Host ""
-Write-Host "[3/6] Executando verificações de qualidade..." -ForegroundColor Yellow
+Write-Host "[3/6] Executando verificacoes de qualidade..." -ForegroundColor Yellow
 
 $PackageJson = Join-Path $ProjectRoot "package.json"
 if (Test-Path $PackageJson) {
     $PkgContent = Get-Content $PackageJson -Raw | ConvertFrom-Json
-    $HasLint = $PkgContent.scripts.lint -ne $null
-    $HasTypeCheck = $PkgContent.scripts."type-check" -ne $null
+    $HasLint = $null -ne $PkgContent.scripts.lint
 
     if ($HasLint) {
         Write-Host "  Executando npm run lint..." -ForegroundColor Gray
-        $LintResult = npm run lint 2>&1
+        npm run lint
         if ($LASTEXITCODE -eq 0) {
             Write-Host "  Lint: PASSOU" -ForegroundColor Green
         } else {
             Write-Host "  Lint: FALHOU" -ForegroundColor Red
-            Write-Host "  Execute 'npm run lint' para ver os erros." -ForegroundColor Yellow
+            Write-Host "  Execute npm run lint para ver os erros." -ForegroundColor Yellow
         }
     }
 } else {
-    Write-Host "  package.json não encontrado — verificação ignorada." -ForegroundColor Gray
+    Write-Host "  package.json nao encontrado - verificacao ignorada." -ForegroundColor Gray
 }
 
 # --- 4. Gerar template do report ---
 Write-Host ""
-Write-Host "[4/6] Gerando template do Report de Sessão..." -ForegroundColor Yellow
+Write-Host "[4/6] Gerando template do Report de Sessao..." -ForegroundColor Yellow
 
-$ModifiedFilesList = if ($ModifiedFiles) {
-    ($ModifiedFiles | ForEach-Object { "- ``$_``" }) -join "`n"
+if ($ModifiedFiles) {
+    $ModifiedFilesList = ($ModifiedFiles | ForEach-Object { "- $_" }) -join "`n"
 } else {
-    "- (nenhum arquivo modificado)"
+    $ModifiedFilesList = "- (nenhum arquivo modificado)"
 }
 
-$ReportTemplate = @"
-# Report de Sessão — $Date
-
-## Missão
-[PREENCHER: Objetivo definido no início da sessão]
-
-## Status: [COMPLETO | PARCIAL | BLOQUEADO]
-
-## O Que Foi Feito
-
-### Arquivos Modificados
-$ModifiedFilesList
-
-### Decisões Técnicas Tomadas
-1. [Decisão] — Motivo: [justificativa]
-
-### Artefatos Gerados
-- [ ] Task List
-- [ ] Plano de Implementação
-- [ ] Walkthrough
-- [ ] Screenshots de Validação UI
-
-## Testes
-- [ ] Lint passou
-- [ ] TypeScript sem erros
-- [ ] Validação visual (Browser Agent)
-- [ ] Sem regressões detectadas
-
-## Bloqueadores / Impedimentos
-- (nenhum)
-
-## Próximos Passos (Para a Próxima Sessão)
-1. [Tarefa específica com arquivo de referência]
-2. [Tarefa específica com arquivo de referência]
-
-## Aprovação do Arquiteto
-- [ ] APROVADO: Claude Code
-- [ ] REVISAR: _______________
-
----
-*Agente de Execução: Google Antigravity*
-*Arquiteto: Claude Code*
-*Data/Hora: $DateTime*
-"@
+$ReportContent = "# Report de Sessao - $Date`n`n"
+$ReportContent += "## Missao`n[PREENCHER: Objetivo definido no inicio da sessao]`n`n"
+$ReportContent += "## Status: [COMPLETO | PARCIAL | BLOQUEADO]`n`n"
+$ReportContent += "## O Que Foi Feito`n`n"
+$ReportContent += "### Arquivos Modificados`n$ModifiedFilesList`n`n"
+$ReportContent += "### Decisoes Tecnicas Tomadas`n1. [Decisao] - Motivo: [justificativa]`n`n"
+$ReportContent += "### Artefatos Gerados`n- [ ] Task List`n- [ ] Plano de Implementacao`n- [ ] Walkthrough`n- [ ] Screenshots de Validacao UI`n`n"
+$ReportContent += "## Testes`n- [ ] Lint passou`n- [ ] TypeScript sem erros`n- [ ] Validacao visual (Browser Agent)`n- [ ] Sem regressoes detectadas`n`n"
+$ReportContent += "## Bloqueadores / Impedimentos`n- (nenhum)`n`n"
+$ReportContent += "## Proximos Passos (Para a Proxima Sessao)`n1. [Tarefa especifica com arquivo de referencia]`n2. [Tarefa especifica com arquivo de referencia]`n`n"
+$ReportContent += "## Aprovacao do Arquiteto`n- [ ] APROVADO: Claude Code`n- [ ] REVISAR: _______________`n`n"
+$ReportContent += "---`n*Agente de Execucao: Google Antigravity*`n*Arquiteto: Claude Code*`n*Data/Hora: $DateTime*`n"
 
 if (-Not (Test-Path $ReportFile)) {
-    Set-Content -Path $ReportFile -Value $ReportTemplate -Encoding UTF8
+    Set-Content -Path $ReportFile -Value $ReportContent -Encoding UTF8
     Write-Host "  Template criado em: docs/session-reports/$Date.md" -ForegroundColor Green
     Write-Host "  Preencha o report antes de commitar!" -ForegroundColor Yellow
 } else {
-    Write-Host "  Report do dia já existe: docs/session-reports/$Date.md" -ForegroundColor Yellow
-    Write-Host "  Verifique e atualize manualmente se necessário." -ForegroundColor Gray
+    Write-Host "  Report do dia ja existe: docs/session-reports/$Date.md" -ForegroundColor Yellow
+    Write-Host "  Verifique e atualize manualmente se necessario." -ForegroundColor Gray
 }
 
-# --- 5. Resumo do repositório ---
+# --- 5. Resumo do repositorio ---
 Write-Host ""
-Write-Host "[5/6] Resumo do repositório..." -ForegroundColor Yellow
+Write-Host "[5/6] Resumo do repositorio..." -ForegroundColor Yellow
 
-$Stats = @{
-    Modificados = ($ModifiedFiles | Where-Object { $_ }).Count
-    NaoTrackeados = ($UntrackedFiles | Where-Object { $_ }).Count
-}
+$CountModified = ($ModifiedFiles | Where-Object { $_ }).Count
+$CountUntracked = ($UntrackedFiles | Where-Object { $_ }).Count
 
-Write-Host "  Arquivos modificados: $($Stats.Modificados)" -ForegroundColor White
-Write-Host "  Arquivos novos (não commitados): $($Stats.NaoTrackeados)" -ForegroundColor White
+Write-Host "  Arquivos modificados: $CountModified" -ForegroundColor White
+Write-Host "  Arquivos novos (nao commitados): $CountUntracked" -ForegroundColor White
 
-# --- 6. Instruções finais ---
+# --- 6. Instrucoes finais ---
 Write-Host ""
-Write-Host "[6/6] Próximos passos para encerrar a sessão." -ForegroundColor Yellow
+Write-Host "[6/6] Proximos passos para encerrar a sessao." -ForegroundColor Yellow
 Write-Host ""
 Write-Host "=============================================" -ForegroundColor Magenta
 Write-Host "  CHECKLIST FINAL:" -ForegroundColor Magenta
 Write-Host ""
 
 if ($SecurityIssues.Count -gt 0) {
-    Write-Host "  [BLOQUEADO] Resolva os alertas de segurança!" -ForegroundColor Red
+    Write-Host "  [BLOQUEADO] Resolva os alertas de seguranca!" -ForegroundColor Red
 } else {
-    Write-Host "  [OK] Segurança verificada" -ForegroundColor Green
+    Write-Host "  [OK] Seguranca verificada" -ForegroundColor Green
 }
 
 Write-Host ""
 Write-Host "  Passos a completar ANTES de encerrar:" -ForegroundColor White
 Write-Host "  1. Preencher docs/session-reports/$Date.md" -ForegroundColor Gray
-Write-Host "     (missão, decisões, próximos passos)" -ForegroundColor Gray
+Write-Host "     (missao, decisoes, proximos passos)" -ForegroundColor Gray
 Write-Host ""
 Write-Host "  2. No Antigravity, executar /session-end" -ForegroundColor Gray
 Write-Host "     para gerar o Walkthrough completo" -ForegroundColor Gray
 Write-Host ""
-Write-Host "  3. Aguardar aprovação do Arquiteto (Claude Code)" -ForegroundColor Gray
+Write-Host "  3. Aguardar aprovacao do Arquiteto (Claude Code)" -ForegroundColor Gray
 Write-Host ""
-Write-Host "  4. Após aprovação, commitar o report:" -ForegroundColor Gray
+Write-Host "  4. Apos aprovacao, commitar o report:" -ForegroundColor Gray
 Write-Host "     git add docs/session-reports/$Date.md" -ForegroundColor Gray
 Write-Host "     git commit -m 'docs(session): report $Date'" -ForegroundColor Gray
 Write-Host ""
-Write-Host "  Até a próxima sessão!" -ForegroundColor Green
+Write-Host "  Ate a proxima sessao!" -ForegroundColor Green
 Write-Host "=============================================" -ForegroundColor Magenta
 Write-Host ""
