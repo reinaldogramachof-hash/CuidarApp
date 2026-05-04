@@ -1,8 +1,10 @@
 # CuidarApp — Documento Central do Projeto
 
 ## Identidade do Projeto
-**CuidarApp** é uma plataforma Web + PWA de gestão de Home Care que conecta três perfis:
-Admin/Clínica, Familiar/Acompanhante e Cuidador. Stack: React (TypeScript) + Vite + Supabase.
+**CuidarApp** é uma plataforma SaaS vertical de gestão de cuidados de saúde que conecta profissionais autônomos, equipes de home care, clínicas e redes de residenciais sênior — escalando do cuidador solo até o enterprise multi-unidade. Inclui marketplace bidirecional família-profissional. Stack: React (TypeScript) + Vite + Supabase.
+
+**Roadmap completo:** ver [docs/ROADMAP.md](docs/ROADMAP.md)
+**Fase atual:** Fase 1 — Produto Palpável (Sprints 1–4)
 
 ## Time de IAs — Papéis e Responsabilidades
 

@@ -1,29 +1,50 @@
-/* ─── DESIGN TOKENS ─────────────────────────────────────────── */
+/* ─── DESIGN TOKENS — Clinical Empathy ─────────────────────── */
+/* Baseado no design system definido em clinical_empathy/DESIGN.md */
+
 export const C = {
-  primary: "#1565C0",
-  primaryDark: "#0D47A1",
-  primaryLight: "#E3F2FD",
-  primaryMid: "#BBDEFB",
-  accent: "#00897B",
-  accentLight: "#E0F2F1",
-  warm: "#FFF8F0",
-  surface: "#FFFFFF",
-  bg: "#F4F7FB",
-  navy: "#1A237E",
-  textMid: "#546E7A",
-  textLight: "#90A4AE",
-  border: "#E0E7EF",
-  warning: "#FF8F00",
-  warningLight: "#FFF8E1",
-  danger: "#E53935",
-  dangerLight: "#FFEBEE",
-  success: "#2E7D32",
-  successLight: "#E8F5E9",
-  info: "#0277BD",
-  infoLight: "#E1F5FE",
+  // Primária — Teal Profissional
+  primary: "#006767",
+  primaryDark: "#004f4f",
+  primaryLight: "#e0f4f4",
+  primaryMid: "#6fd7d6",
+  primaryContainer: "#008282",
+
+  // Secundária — Azul Confiança
+  secondary: "#476083",
+  secondaryLight: "#bdd6ff",
+
+  // Fundos e Superfícies
+  surface: "#ffffff",
+  bg: "#f8f9fa",
+  bgDim: "#d9dadb",
+
+  // Textos
+  navy: "#191c1d",
+  textMid: "#3d4949",
+  textLight: "#6d7979",
+
+  // Bordas
+  border: "#bcc9c8",
+  borderSubtle: "#e1e3e4",
+
+  // Estados funcionais
+  warning: "#b45309",
+  warningLight: "#fef3c7",
+  danger: "#ba1a1a",
+  dangerLight: "#ffdad6",
+  success: "#006767",
+  successLight: "#e0f4f4",
+  info: "#476083",
+  infoLight: "#dbeafe",
+
+  // Extras
+  accent: "#006767",
+  accentLight: "#e0f4f4",
+  warm: "#fdf8f3",
 };
 
 export const T = {
-  display: "'Nunito', sans-serif",
-  body: "'DM Sans', sans-serif",
+  display: "'Manrope', 'Inter', sans-serif",
+  body: "'Inter', sans-serif",
+  mono: "'Inter', monospace",
 };
