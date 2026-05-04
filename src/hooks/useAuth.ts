@@ -23,42 +23,46 @@ export function useAuth() {
   useEffect(() => {
     let mounted = true
 
-    // Escuta mudanças na autenticação (isso cobre o carregamento inicial e login/logout)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (!mounted) return
         
         console.log('Auth Event:', event)
-        setSession(session)
-        setUser(session?.user ?? null)
         
-        if (session?.user) {
-          setLoading(true)
-          let resolved: UserProfile | null = null
+        if (!session) {
+          setSession(null)
+          setUser(null)
+          setProfile(null)
+          setLoading(false)
+          return
+        }
 
-          // Retry up to 3x — guards against transient Navigator Lock errors from HMR
-          for (let attempt = 0; attempt < 3; attempt++) {
-            if (!mounted) return
-            const { data, error } = await supabase
-              .from('user_profiles')
-              .select('*')
-              .eq('id', session.user.id)
-              .maybeSingle()
+        // Se o usuário mudou ou se é o carregamento inicial, garantimos o loading
+        setLoading(true)
+        setSession(session)
+        setUser(session.user)
+        
+        let resolved: UserProfile | null = null
 
-            if (!error) { resolved = data; break }
-            console.warn(`Profile fetch attempt ${attempt + 1} failed:`, error.message)
-            if (attempt < 2) await new Promise(r => setTimeout(r, 600))
-          }
+        for (let attempt = 0; attempt < 3; attempt++) {
+          if (!mounted) return
+          const { data, error } = await supabase
+            .from('user_profiles')
+            .select('*')
+            .eq('id', session.user.id)
+            .maybeSingle()
 
-          if (mounted) {
-            setProfile(resolved)
-            setLoading(false)
+          if (!error) { 
+            resolved = data
+            break 
           }
-        } else {
-          if (mounted) {
-            setProfile(null)
-            setLoading(false)
-          }
+          console.warn(`Profile fetch attempt ${attempt + 1} failed:`, error.message)
+          if (attempt < 2) await new Promise(r => setTimeout(r, 600))
+        }
+
+        if (mounted) {
+          setProfile(resolved)
+          setLoading(false)
         }
       }
     )

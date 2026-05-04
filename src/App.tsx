@@ -1395,12 +1395,17 @@ const AdminReports = () => (
 /* ─── ROUTING HELPERS ────────────────────────────────────────── */
 function RootRedirect() {
   const { user, profile, loading } = useAuth()
-  if (loading) return null
-  if (!user) return <Navigate to="/login" replace />
-  if (!profile) return <Navigate to="/unauthorized" replace />
-  if (profile.role === 'admin') return <Navigate to="/admin" replace />
-  if (profile.role === 'caregiver') return <Navigate to="/caregiver" replace />
-  if (profile.role === 'family') return <Navigate to="/family" replace />
+  
+  if (loading && !profile) return null
+  if (!loading && !user) return <Navigate to="/login" replace />
+  if (!loading && !profile) return <Navigate to="/unauthorized" replace />
+  
+  if (profile) {
+    if (profile.role === 'admin') return <Navigate to="/admin" replace />
+    if (profile.role === 'caregiver') return <Navigate to="/caregiver" replace />
+    if (profile.role === 'family') return <Navigate to="/family" replace />
+  }
+  
   return <Navigate to="/unauthorized" replace />
 }
 

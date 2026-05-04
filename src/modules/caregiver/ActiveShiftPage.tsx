@@ -5,6 +5,9 @@ import { useShift, useCheckOut } from '../../hooks/queries/useShifts'
 import { useCareEvents, useAddCareEvent } from '../../hooks/queries/useCareEvents'
 import VitalSignsModal from './VitalSignsModal'
 import Toast from '../../components/ui/Toast'
+import EventModal from './EventModal'
+import ShiftChecklist from './ShiftChecklist'
+import MedicationCard from './MedicationCard'
 
 const EVENT_TYPES = [
   { type: 'feeding',       label: 'Alimentação',  icon: 'fa-utensils',   color: '#d97706' },
@@ -27,7 +30,7 @@ export default function ActiveShiftPage() {
   const [duration, setDuration]         = useState('')
   const [showVitals, setShowVitals]     = useState(false)
   const [selectedEvent, setSelected]    = useState<typeof EVENT_TYPES[0] | null>(null)
-  const [notes, setNotes]               = useState('')
+  const [checklistRequiredDone, setChecklistRequiredDone] = useState(false)
   const [showCheckoutModal, setShowCheckoutModal] = useState(false)
   const [toast, setToast]               = useState<{ message: string; type: 'success' | 'error' } | null>(null)
 
@@ -48,15 +51,6 @@ export default function ActiveShiftPage() {
     </div>
   )
 
-  const handleAddEvent = async () => {
-    if (!selectedEvent || !shift) return
-    await addEventMutation.mutateAsync({
-      shift_id: shift.id, patient_id: shift.patient_id,
-      caregiver_id: profile?.id || '', event_type: selectedEvent.type as any, notes,
-    })
-    setSelected(null); setNotes('')
-    setToast({ message: 'Evento registrado com sucesso ✓', type: 'success' })
-  }
 
   const handleCheckOut = async () => {
     await checkOutMutation.mutateAsync({ shiftId: shiftId || '' })
@@ -116,6 +110,22 @@ export default function ActiveShiftPage() {
           </div>
         </div>
 
+        <ShiftChecklist
+          shiftId={shiftId || ''}
+          patientId={shift?.patient_id}
+          caregiverId={profile?.id}
+          onProgress={(_done, _total, reqDone) => setChecklistRequiredDone(reqDone)}
+        />
+
+        {/* Medicações do Turno */}
+        <h2 className="section-title">Medicações do Turno</h2>
+        <MedicationCard
+          shiftId={shiftId || ''}
+          patientId={shift?.patient_id || ''}
+          caregiverId={profile?.id || ''}
+          onToast={(msg, type) => setToast({ message: msg, type })}
+        />
+
         {/* Registrar Evento */}
         <h2 className="section-title">Registrar Evento</h2>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', marginBottom: '20px' }}>
@@ -156,30 +166,61 @@ export default function ActiveShiftPage() {
         <h2 className="section-title">Eventos do Turno</h2>
         <div style={{ background: '#fff', borderRadius: '16px', border: '1px solid var(--color-border-subtle)', overflow: 'hidden' }}>
           {Array.isArray(events) && events.length > 0 ? (
-            (events as any[]).map((ev, i) => {
-              const info = EVENT_TYPES.find(t => t.type === ev.event_type) ?? EVENT_TYPES[5]
-              return (
-                <div key={ev.id} style={{
-                  display: 'flex', alignItems: 'center', gap: '14px', padding: '14px 18px',
-                  borderBottom: i < events.length - 1 ? '1px solid var(--color-border-subtle)' : 'none',
-                }}>
-                  <div style={{
-                    width: '36px', height: '36px', borderRadius: '10px', flexShrink: 0,
-                    background: `${info.color}15`, color: info.color, fontSize: '14px',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+            events
+              .filter((ev: any) => !ev.notes?.startsWith('[CHECKLIST]'))
+              .map((ev: any, i, filtered) => {
+                const info = EVENT_TYPES.find(t => t.type === ev.event_type) ?? EVENT_TYPES[5]
+                
+                // Parser para notas estruturadas (igual ao da família)
+                const structuredDetails = ev.notes?.includes(' | ') 
+                  ? ev.notes.split(' | ').map((part: string) => {
+                      const [label, ...val] = part.split(': ')
+                      return { label: label.trim(), value: val.join(': ').trim() }
+                    })
+                  : null
+
+                return (
+                  <div key={ev.id} style={{
+                    display: 'flex', alignItems: 'flex-start', gap: '14px', padding: '14px 18px',
+                    borderBottom: i < filtered.length - 1 ? '1px solid var(--color-border-subtle)' : 'none',
                   }}>
-                    <i className={`fa-solid ${info.icon}`}></i>
+                    <div style={{
+                      width: '36px', height: '36px', borderRadius: '10px', flexShrink: 0,
+                      background: `${info.color}15`, color: info.color, fontSize: '14px',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: '2px',
+                    }}>
+                      <i className={`fa-solid ${info.icon}`}></i>
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div style={{ fontWeight: 700, fontSize: '14px', color: 'var(--color-navy)' }}>{info.label}</div>
+                        <span style={{ fontSize: '12px', color: 'var(--color-text-light)', fontWeight: 600 }}>
+                          {new Date(ev.occurred_at || '').toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      </div>
+                      
+                      {structuredDetails ? (
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '6px' }}>
+                          {structuredDetails.map((det: any, idx: number) => (
+                            <div key={idx} style={{ 
+                              background: 'var(--color-bg)', 
+                              padding: '4px 8px', 
+                              borderRadius: '6px', 
+                              border: '1px solid var(--color-border-subtle)',
+                              fontSize: '11px' 
+                            }}>
+                              <span style={{ color: 'var(--color-text-light)', fontWeight: 700, marginRight: '4px' }}>{det.label}</span>
+                              <span style={{ color: 'var(--color-navy)', fontWeight: 600 }}>{det.value}</span>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        ev.notes && <div style={{ fontSize: '12px', color: 'var(--color-text-mid)', marginTop: '2px', lineHeight: 1.4 }}>{ev.notes}</div>
+                      )}
+                    </div>
                   </div>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontWeight: 700, fontSize: '14px', color: 'var(--color-navy)' }}>{info.label}</div>
-                    {ev.notes && <div style={{ fontSize: '12px', color: 'var(--color-text-mid)', marginTop: '2px' }}>{ev.notes}</div>}
-                  </div>
-                  <span style={{ fontSize: '12px', color: 'var(--color-text-light)', fontWeight: 600 }}>
-                    {new Date(ev.occurred_at || '').toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-                  </span>
-                </div>
-              )
-            })
+                )
+              })
           ) : (
             <div style={{ padding: '28px', textAlign: 'center', color: 'var(--color-text-light)', fontSize: '14px' }}>
               <i className="fa-solid fa-clock" style={{ fontSize: '20px', opacity: 0.3, marginBottom: '8px', display: 'block' }}></i>
@@ -230,6 +271,18 @@ export default function ActiveShiftPage() {
                 Esta ação não pode ser desfeita. O tempo final será registrado agora.
               </p>
             </div>
+
+            {!checklistRequiredDone && (
+              <div style={{
+                background: 'var(--color-warning-light)', borderRadius: '10px',
+                padding: '10px 14px', marginBottom: '16px', fontSize: '13px',
+                color: 'var(--color-warning)', display: 'flex', gap: '8px', alignItems: 'center'
+              }}>
+                <i className="fa-solid fa-triangle-exclamation"></i>
+                Itens obrigatórios do protocolo pendentes — revise o checklist.
+              </div>
+            )}
+
             <div style={{ display: 'flex', gap: '12px' }}>
               <button onClick={() => setShowCheckoutModal(false)} className="btn-outline" style={{ flex: 1 }}>
                 Cancelar
@@ -247,41 +300,19 @@ export default function ActiveShiftPage() {
         </div>
       )}
 
-      {/* Modal anotação do evento */}
+      {/* Modal anotação do evento (Substituído pelo EventModal estruturado) */}
       {selectedEvent && (
-        <div style={{
-          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 200,
-          display: 'flex', alignItems: 'flex-end', backdropFilter: 'blur(4px)',
-        }}>
-          <div style={{
-            width: '100%', maxWidth: '520px', margin: '0 auto', background: '#fff',
-            borderTopLeftRadius: '24px', borderTopRightRadius: '24px', padding: '28px',
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
-              <div style={{
-                width: '44px', height: '44px', borderRadius: '12px', background: `${selectedEvent.color}15`,
-                display: 'flex', alignItems: 'center', justifyContent: 'center', color: selectedEvent.color, fontSize: '20px',
-              }}>
-                <i className={`fa-solid ${selectedEvent.icon}`}></i>
-              </div>
-              <h3 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '20px', color: 'var(--color-navy)', margin: 0 }}>
-                {selectedEvent.label}
-              </h3>
-            </div>
-            <textarea
-              placeholder="Observações (opcional)..."
-              value={notes} onChange={e => setNotes(e.target.value)}
-              className="input-field"
-              style={{ height: '100px', resize: 'none', marginBottom: '20px', display: 'block' }}
-            />
-            <div style={{ display: 'flex', gap: '12px' }}>
-              <button onClick={() => setSelected(null)} className="btn-outline" style={{ flex: 1 }}>Cancelar</button>
-              <button onClick={handleAddEvent} disabled={addEventMutation.isPending} className="btn-primary" style={{ flex: 2 }}>
-                {addEventMutation.isPending ? 'Registrando...' : 'Confirmar'}
-              </button>
-            </div>
-          </div>
-        </div>
+        <EventModal
+          event={selectedEvent}
+          shiftId={shiftId || ''}
+          patientId={shift?.patient_id || ''}
+          caregiverId={profile?.id || ''}
+          onClose={() => setSelected(null)}
+          onSuccess={() => {
+            setSelected(null)
+            setToast({ message: 'Evento registrado ✓', type: 'success' })
+          }}
+        />
       )}
 
       {showVitals && (

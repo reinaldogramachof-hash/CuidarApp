@@ -3,6 +3,9 @@ import { useAuth } from '../../hooks/useAuth'
 import { useFamilyPatient, usePatientActiveShift, usePatientAlerts } from '../../hooks/queries/useFamilyPatient'
 import { useCareEvents } from '../../hooks/queries/useCareEvents'
 import { useShiftVitalSigns } from '../../hooks/queries/useVitalSigns'
+import { C, T } from '../../utils/tokens'
+import ShiftChecklist from '../caregiver/ShiftChecklist'
+import MedicationSummaryCard from './MedicationSummaryCard'
 
 const EVENT_TYPES: Record<string, { label: string; icon: string; color: string }> = {
   feeding:       { label: 'Alimentação',  icon: 'fa-utensils',      color: '#d97706' },
@@ -47,7 +50,16 @@ export default function FamilyHomePage() {
 
   const lastVitals   = vitals?.[0]
   const prevVitals   = vitals?.[1]
-  const recentEvents = events?.slice(0, 5)
+  
+  // Extrai o último estado do checklist sincronizado
+  const checklistEvent = events?.find(e => e.notes?.startsWith('[CHECKLIST]'))
+  const checklistData = checklistEvent?.notes 
+    ? JSON.parse(checklistEvent.notes.replace('[CHECKLIST] ', '')) 
+    : undefined
+
+  // Filtra eventos técnicos de sincronização para a timeline
+  const filteredEvents = events?.filter(e => !e.notes?.startsWith('[CHECKLIST]'))
+  const recentEvents = filteredEvents?.slice(0, 5)
   const unreadAlerts = (alerts as any[])?.filter(a => !a.is_read) ?? []
 
   const handleLogout = async () => { await signOut(); navigate('/login') }
@@ -150,27 +162,45 @@ export default function FamilyHomePage() {
 
             {/* Cuidador ativo */}
             <div style={{
-              background: 'rgba(255,255,255,0.08)', borderRadius: '12px', padding: '12px 16px',
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              background: 'rgba(255,255,255,0.08)', borderRadius: '14px', padding: '14px',
+              display: 'flex', alignItems: 'center', gap: '12px'
             }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              {activeShift?.caregiver?.avatar_url ? (
+                <img src={activeShift.caregiver.avatar_url} alt="Caregiver" style={{
+                  width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover',
+                  border: '2px solid rgba(255,255,255,0.2)'
+                }} />
+              ) : (
                 <div style={{
-                  width: '8px', height: '8px', borderRadius: '50%',
-                  background: activeShift?.status === 'active' ? '#4ade80' : '#facc15',
-                }}></div>
-                <span style={{ fontSize: '13px', fontWeight: 600 }}>
-                  {activeShift?.status === 'active'
-                    ? `${activeShift.caregiver?.full_name} — em serviço`
-                    : activeShift?.status === 'scheduled'
-                    ? `Próximo turno: ${new Date(activeShift.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
-                    : 'Nenhum turno hoje'}
-                </span>
+                  width: '40px', height: '40px', borderRadius: '50%', background: 'rgba(255,255,255,0.2)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px'
+                }}>
+                  <i className="fa-solid fa-user-nurse"></i>
+                </div>
+              )}
+              
+              <div style={{ flex: 1 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <div style={{
+                    width: '8px', height: '8px', borderRadius: '50%',
+                    background: activeShift?.status === 'active' ? '#4ade80' : '#facc15',
+                  }}></div>
+                  <span style={{ fontSize: '13px', fontWeight: 700 }}>
+                    {activeShift?.caregiver?.full_name || 'Sem cuidador'}
+                  </span>
+                </div>
+                <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.5)', margin: 0 }}>
+                  {activeShift?.status === 'active' ? 'Em serviço agora' : 'Turno agendado'}
+                </p>
               </div>
-              {activeShift && (
-                <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)' }}>
-                  {new Date(activeShift.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}–
-                  {new Date(activeShift.end_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                </span>
+
+              {activeShift?.caregiver?.phone && (
+                <a href={`tel:${activeShift.caregiver.phone}`} style={{
+                  width: '36px', height: '36px', borderRadius: '10px', background: 'var(--color-primary)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', textDecoration: 'none'
+                }}>
+                  <i className="fa-solid fa-phone"></i>
+                </a>
               )}
             </div>
           </div>
@@ -223,73 +253,113 @@ export default function FamilyHomePage() {
           )}
         </section>
 
+        {/* ── Protocolo do Turno ── */}
+        {activeShift && (
+          <section style={{ marginBottom: '28px' }}>
+            <h2 className="section-title">Protocolo de Cuidado</h2>
+            <ShiftChecklist 
+              shiftId={activeShift.id} 
+              readOnly={true}
+              initialData={checklistData}
+            />
+          </section>
+        )}
+
+        {/* ── Aderência a Medicamentos ── */}
+        {activeShift && patient?.id && (
+          <section style={{ marginBottom: '28px' }}>
+            <h2 className="section-title">Medicamentos</h2>
+            <MedicationSummaryCard
+              shiftId={activeShift.id}
+              patientId={patient.id}
+            />
+          </section>
+        )}
+
         {/* ── Linha do Dia ── */}
         <section>
-          <h2 className="section-title">Linha do Dia</h2>
-          <div style={{ background: '#fff', borderRadius: '16px', border: '1px solid var(--color-border-subtle)', overflow: 'hidden' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
+            <h2 className="section-title" style={{ marginBottom: 0 }}>Linha do Dia</h2>
+            <span style={{ fontSize: '12px', color: C.textLight, fontWeight: 600 }}>{events?.length || 0} registros</span>
+          </div>
+          
+          <div style={{ background: '#fff', borderRadius: '16px', border: `1px solid ${C.border}`, overflow: 'hidden' }}>
             {Array.isArray(recentEvents) && recentEvents.length > 0 ? (
               recentEvents.map((event, i) => {
                 const info = EVENT_TYPES[event.event_type] ?? EVENT_TYPES.other
+                
+                // Parser para as notas estruturadas (ex: "Via: Oral | Refeição: Almoço")
+                const structuredDetails = event.notes?.includes(' | ') 
+                  ? event.notes.split(' | ').map(part => {
+                      const [label, ...val] = part.split(': ')
+                      return { label: label.trim(), value: val.join(': ').trim() }
+                    })
+                  : null
+
                 return (
                   <div key={event.id} style={{
-                    display: 'flex', gap: '14px', padding: '14px 20px', alignItems: 'flex-start',
-                    borderBottom: i < recentEvents.length - 1 ? '1px solid var(--color-border-subtle)' : 'none',
+                    display: 'flex', gap: '14px', padding: '16px 20px', alignItems: 'flex-start',
+                    borderBottom: i < recentEvents.length - 1 ? `1px solid ${C.border}` : 'none',
                   }}>
                     <div style={{
-                      width: '36px', height: '36px', borderRadius: '10px', flexShrink: 0,
+                      width: '40px', height: '40px', borderRadius: '12px', flexShrink: 0,
                       background: `${info.color}15`,
-                      display: 'flex', alignItems: 'center', justifyContent: 'center', color: info.color, fontSize: '15px',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', color: info.color, fontSize: '16px',
                     }}>
                       <i className={`fa-solid ${info.icon}`}></i>
                     </div>
                     <div style={{ flex: 1 }}>
-                      <div style={{ fontWeight: 700, fontSize: '14px', color: 'var(--color-navy)' }}>{info.label}</div>
-                      {event.notes && <div style={{ fontSize: '12px', color: 'var(--color-text-mid)', marginTop: '2px' }}>{event.notes}</div>}
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                        <div style={{ fontWeight: 700, fontSize: '14px', color: C.navy }}>{info.label}</div>
+                        <span style={{ fontSize: '11px', color: C.textLight, fontWeight: 600 }}>
+                          {new Date(event.occurred_at || '').toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      </div>
+                      
+                      {structuredDetails ? (
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '6px' }}>
+                          {structuredDetails.map((det, idx) => (
+                            <div key={idx} style={{ 
+                              background: '#f8f9fa', 
+                              padding: '4px 8px', 
+                              borderRadius: '6px', 
+                              border: '1px solid #edf2f7',
+                              fontSize: '11px' 
+                            }}>
+                              <span style={{ color: C.textLight, fontWeight: 700, marginRight: '4px' }}>{det.label}</span>
+                              <span style={{ color: C.navy, fontWeight: 600 }}>{det.value}</span>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        event.notes && <div style={{ fontSize: '13px', color: C.textMid, marginTop: '2px', lineHeight: 1.4 }}>{event.notes}</div>
+                      )}
                     </div>
-                    <span style={{ fontSize: '12px', color: 'var(--color-text-light)', fontWeight: 600, whiteSpace: 'nowrap' }}>
-                      {new Date(event.occurred_at || '').toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-                    </span>
                   </div>
                 )
               })
             ) : (
-              <div style={{ padding: '28px', textAlign: 'center', color: 'var(--color-text-light)', fontSize: '14px' }}>
-                <i className="fa-solid fa-clock" style={{ fontSize: '20px', opacity: 0.3, marginBottom: '8px', display: 'block' }}></i>
-                Nenhum evento registrado ainda
+              <div style={{ padding: '32px 20px', textAlign: 'center', color: C.textLight }}>
+                <i className="fa-solid fa-clock" style={{ fontSize: '24px', opacity: 0.2, marginBottom: '12px', display: 'block' }}></i>
+                Nenhum evento registrado hoje
               </div>
             )}
           </div>
+          
+          {events && events.length > 5 && (
+            <button 
+              onClick={() => navigate('/family/records')}
+              style={{
+                width: '100%', padding: '14px', background: 'none', border: 'none',
+                color: C.primary, fontWeight: 700, fontSize: '13px', cursor: 'pointer',
+                textAlign: 'center'
+              }}
+            >
+              Ver todos os registros
+            </button>
+          )}
         </section>
       </div>
-
-      {/* ── Bottom Nav ── */}
-      <nav style={{
-        position: 'fixed', bottom: 0, left: 0, right: 0, background: '#fff',
-        borderTop: '1px solid var(--color-border-subtle)', display: 'flex',
-        justifyContent: 'space-around', padding: '8px 0 14px', zIndex: 10,
-        boxShadow: '0 -2px 12px rgba(0,0,0,0.06)',
-      }}>
-        {[
-          { label: 'Início',   icon: 'fa-house',       path: '/family' },
-          { label: 'Sinais',   icon: 'fa-heart-pulse', path: '/family/vitals' },
-          { label: 'Equipe',   icon: 'fa-users',       path: '/family/team' },
-          { label: 'Registro', icon: 'fa-file-lines',  path: '/family/records' },
-        ].map(item => {
-          const isActive = item.path === '/family'
-            ? location.pathname === '/family'
-            : location.pathname.startsWith(item.path)
-          return (
-            <button key={item.label} onClick={() => navigate(item.path)} style={{
-              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px',
-              background: 'none', border: 'none', cursor: 'pointer', width: '25%',
-              color: isActive ? 'var(--color-primary)' : 'var(--color-text-light)',
-            }}>
-              <i className={`fa-solid ${item.icon}`} style={{ fontSize: '20px' }}></i>
-              <span style={{ fontSize: '10px', fontWeight: 700 }}>{item.label}</span>
-            </button>
-          )
-        })}
-      </nav>
     </div>
   )
 }

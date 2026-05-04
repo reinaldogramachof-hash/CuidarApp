@@ -29,7 +29,7 @@ export function usePatientActiveShift(patientId: string) {
     queryFn: async () => {
       const { data, error } = await (supabase
         .from('shifts') as any)
-        .select('*, caregiver:user_profiles!caregiver_id(full_name)')
+        .select('*, caregiver:user_profiles!caregiver_id(full_name, avatar_url, phone)')
         .eq('patient_id', patientId)
         .in('status', ['active', 'scheduled'])
         .order('start_time', { ascending: true })
