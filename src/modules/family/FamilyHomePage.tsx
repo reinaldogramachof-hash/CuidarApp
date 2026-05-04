@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../../hooks/useAuth'
 import { useFamilyPatient, usePatientActiveShift, usePatientAlerts } from '../../hooks/queries/useFamilyPatient'
 import { useCareEvents } from '../../hooks/queries/useCareEvents'
@@ -16,18 +16,26 @@ const EVENT_TYPES: Record<string, { label: string; icon: string; color: string }
 function isNormal(type: string, value: number | null | undefined) {
   if (value == null) return true
   switch (type) {
-    case 'spo2':       return value >= 92
-    case 'systolic':   return value >= 90 && value <= 160
-    case 'heart_rate': return value >= 50 && value <= 100
+    case 'spo2':        return value >= 92
+    case 'systolic':    return value >= 90 && value <= 160
+    case 'heart_rate':  return value >= 50 && value <= 100
     case 'temperature': return value <= 37.8
-    case 'glucose':    return value >= 70 && value <= 180
+    case 'glucose':     return value >= 70 && value <= 180
     default: return true
   }
+}
+
+function getGreeting() {
+  const h = new Date().getHours()
+  if (h < 12) return 'Bom dia'
+  if (h < 18) return 'Boa tarde'
+  return 'Boa noite'
 }
 
 export default function FamilyHomePage() {
   const { profile, signOut } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
 
   const { data: familyData, isLoading } = useFamilyPatient(profile?.id || '')
   const patient = familyData?.patients
@@ -37,9 +45,10 @@ export default function FamilyHomePage() {
   const { data: vitals }      = useShiftVitalSigns(activeShift?.id || '')
   const { data: events }      = useCareEvents(activeShift?.id || '')
 
-  const lastVitals    = vitals?.[0]
-  const recentEvents  = events?.slice(0, 5)
-  const unreadAlerts  = (alerts as any[])?.filter(a => !a.is_read) ?? []
+  const lastVitals   = vitals?.[0]
+  const prevVitals   = vitals?.[1]
+  const recentEvents = events?.slice(0, 5)
+  const unreadAlerts = (alerts as any[])?.filter(a => !a.is_read) ?? []
 
   const handleLogout = async () => { await signOut(); navigate('/login') }
 
@@ -91,6 +100,16 @@ export default function FamilyHomePage() {
       </header>
 
       <div style={{ padding: '20px' }}>
+        {/* ── Saudação ── */}
+        <div style={{ marginBottom: '20px' }}>
+          <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '22px', color: 'var(--color-navy)', margin: '0 0 4px' }}>
+            {getGreeting()}, {profile?.full_name?.split(' ')[0]}
+          </h1>
+          <p style={{ fontSize: '13px', color: 'var(--color-text-mid)', margin: 0 }}>
+            {patient?.full_name ? `Acompanhando ${patient.full_name}` : 'Carregando...'}
+          </p>
+        </div>
+
         {/* ── Card do Paciente ── */}
         {isLoading ? (
           <div style={{ textAlign: 'center', padding: '40px', color: 'var(--color-text-light)' }}>
@@ -193,12 +212,12 @@ export default function FamilyHomePage() {
             </div>
           ) : (
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-              <VitalCard icon="fa-heart"        label="Pressão Art."    value={`${lastVitals.systolic_bp ?? '--'}/${lastVitals.diastolic_bp ?? '--'}`} unit="mmHg" ok={isNormal('systolic', lastVitals.systolic_bp)} />
-              <VitalCard icon="fa-heart-pulse"  label="Freq. Cardíaca"  value={lastVitals.heart_rate} unit="bpm"   ok={isNormal('heart_rate', lastVitals.heart_rate)} />
-              <VitalCard icon="fa-lungs"        label="SpO₂"            value={lastVitals.spo2}       unit="%"     ok={isNormal('spo2', lastVitals.spo2)} />
-              <VitalCard icon="fa-temperature-half" label="Temperatura" value={lastVitals.temperature} unit="°C"  ok={isNormal('temperature', lastVitals.temperature)} />
+              <VitalCard icon="fa-heart"            label="Pressão Art."   value={`${lastVitals.systolic_bp ?? '--'}/${lastVitals.diastolic_bp ?? '--'}`} unit="mmHg" ok={isNormal('systolic', lastVitals.systolic_bp)}    cur={lastVitals.systolic_bp}  prev={prevVitals?.systolic_bp} />
+              <VitalCard icon="fa-heart-pulse"      label="Freq. Cardíaca" value={lastVitals.heart_rate}  unit="bpm"   ok={isNormal('heart_rate', lastVitals.heart_rate)}   cur={lastVitals.heart_rate}   prev={prevVitals?.heart_rate} />
+              <VitalCard icon="fa-lungs"            label="SpO₂"           value={lastVitals.spo2}        unit="%"     ok={isNormal('spo2', lastVitals.spo2)}                cur={lastVitals.spo2}         prev={prevVitals?.spo2} />
+              <VitalCard icon="fa-temperature-half" label="Temperatura"    value={lastVitals.temperature} unit="°C"    ok={isNormal('temperature', lastVitals.temperature)}  cur={lastVitals.temperature}  prev={prevVitals?.temperature} />
               {lastVitals.glucose != null && (
-                <VitalCard icon="fa-droplet" label="Glicemia" value={lastVitals.glucose} unit="mg/dL" ok={isNormal('glucose', lastVitals.glucose)} />
+                <VitalCard icon="fa-droplet" label="Glicemia" value={lastVitals.glucose} unit="mg/dL" ok={isNormal('glucose', lastVitals.glucose)} cur={lastVitals.glucose} prev={prevVitals?.glucose} />
               )}
             </div>
           )}
@@ -251,27 +270,40 @@ export default function FamilyHomePage() {
         boxShadow: '0 -2px 12px rgba(0,0,0,0.06)',
       }}>
         {[
-          { label: 'Início',   icon: 'fa-house',      path: '/family',        active: true },
-          { label: 'Sinais',   icon: 'fa-heart-pulse', path: '/family/vitals', active: false },
-          { label: 'Equipe',   icon: 'fa-users',      path: '/family',        active: false },
-          { label: 'Registro', icon: 'fa-file-lines', path: '/family',        active: false },
-        ].map(item => (
-          <button key={item.label} onClick={() => navigate(item.path)} style={{
-            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px',
-            background: 'none', border: 'none', cursor: 'pointer', width: '25%',
-            color: item.active ? 'var(--color-primary)' : 'var(--color-text-light)',
-          }}>
-            <i className={`fa-solid ${item.icon}`} style={{ fontSize: '20px' }}></i>
-            <span style={{ fontSize: '10px', fontWeight: 700 }}>{item.label}</span>
-          </button>
-        ))}
+          { label: 'Início',   icon: 'fa-house',       path: '/family' },
+          { label: 'Sinais',   icon: 'fa-heart-pulse', path: '/family/vitals' },
+          { label: 'Equipe',   icon: 'fa-users',       path: '/family/team' },
+          { label: 'Registro', icon: 'fa-file-lines',  path: '/family/records' },
+        ].map(item => {
+          const isActive = item.path === '/family'
+            ? location.pathname === '/family'
+            : location.pathname.startsWith(item.path)
+          return (
+            <button key={item.label} onClick={() => navigate(item.path)} style={{
+              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px',
+              background: 'none', border: 'none', cursor: 'pointer', width: '25%',
+              color: isActive ? 'var(--color-primary)' : 'var(--color-text-light)',
+            }}>
+              <i className={`fa-solid ${item.icon}`} style={{ fontSize: '20px' }}></i>
+              <span style={{ fontSize: '10px', fontWeight: 700 }}>{item.label}</span>
+            </button>
+          )
+        })}
       </nav>
     </div>
   )
 }
 
 /* ─── VitalCard ─── */
-function VitalCard({ icon, label, value, unit, ok }: any) {
+function VitalCard({ icon, label, value, unit, ok, cur, prev }: any) {
+  const trend = prev != null && cur != null
+    ? cur > prev ? 'up' : cur < prev ? 'down' : 'stable'
+    : null
+  const trendArrow = trend === 'up' ? '↑' : trend === 'down' ? '↓' : '→'
+  const trendColor = trend === 'stable'
+    ? 'var(--color-text-light)'
+    : ok ? '#047857' : 'var(--color-danger)'
+
   return (
     <div style={{
       background: ok ? '#fff' : 'var(--color-danger-light)',
@@ -288,7 +320,12 @@ function VitalCard({ icon, label, value, unit, ok }: any) {
         {value ?? '--'}
         <span style={{ fontSize: '11px', fontWeight: 500, color: 'var(--color-text-light)', marginLeft: '3px' }}>{unit}</span>
       </div>
-      <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--color-text-mid)', marginTop: '4px' }}>{label}</div>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '4px' }}>
+        <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--color-text-mid)' }}>{label}</div>
+        {trend && (
+          <span style={{ fontSize: '13px', fontWeight: 800, color: trendColor }}>{trendArrow}</span>
+        )}
+      </div>
     </div>
   )
 }

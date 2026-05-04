@@ -28,6 +28,7 @@ export default function ActiveShiftPage() {
   const [showVitals, setShowVitals]     = useState(false)
   const [selectedEvent, setSelected]    = useState<typeof EVENT_TYPES[0] | null>(null)
   const [notes, setNotes]               = useState('')
+  const [showCheckoutModal, setShowCheckoutModal] = useState(false)
   const [toast, setToast]               = useState<{ message: string; type: 'success' | 'error' } | null>(null)
 
   useEffect(() => {
@@ -58,7 +59,6 @@ export default function ActiveShiftPage() {
   }
 
   const handleCheckOut = async () => {
-    if (!window.confirm('Confirmar encerramento do turno?')) return
     await checkOutMutation.mutateAsync({ shiftId: shiftId || '' })
     navigate('/caregiver')
   }
@@ -191,7 +191,7 @@ export default function ActiveShiftPage() {
 
       {/* Botão Encerrar Turno */}
       <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, padding: '16px 20px', background: 'var(--color-bg)', borderTop: '1px solid var(--color-border-subtle)' }}>
-        <button onClick={handleCheckOut} disabled={checkOutMutation.isPending} style={{
+        <button onClick={() => setShowCheckoutModal(true)} disabled={checkOutMutation.isPending} style={{
           width: '100%', maxWidth: '480px', margin: '0 auto', display: 'block',
           background: checkOutMutation.isPending ? 'var(--color-text-light)' : 'var(--color-danger)',
           color: '#fff', border: 'none', borderRadius: '14px', padding: '16px',
@@ -204,6 +204,48 @@ export default function ActiveShiftPage() {
           }
         </button>
       </div>
+
+      {/* Modal confirmação de checkout */}
+      {showCheckoutModal && (
+        <div style={{
+          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 200,
+          display: 'flex', alignItems: 'flex-end', backdropFilter: 'blur(4px)',
+        }}>
+          <div style={{
+            width: '100%', maxWidth: '520px', margin: '0 auto', background: '#fff',
+            borderTopLeftRadius: '24px', borderTopRightRadius: '24px', padding: '28px',
+          }}>
+            <div style={{ textAlign: 'center', marginBottom: '24px' }}>
+              <div style={{
+                width: '56px', height: '56px', background: 'var(--color-danger-light)', borderRadius: '50%',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                color: 'var(--color-danger)', fontSize: '24px', margin: '0 auto 16px',
+              }}>
+                <i className="fa-solid fa-right-from-bracket"></i>
+              </div>
+              <h3 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '20px', color: 'var(--color-navy)', margin: '0 0 8px' }}>
+                Encerrar turno?
+              </h3>
+              <p style={{ fontSize: '14px', color: 'var(--color-text-mid)', margin: 0 }}>
+                Esta ação não pode ser desfeita. O tempo final será registrado agora.
+              </p>
+            </div>
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <button onClick={() => setShowCheckoutModal(false)} className="btn-outline" style={{ flex: 1 }}>
+                Cancelar
+              </button>
+              <button
+                onClick={() => { setShowCheckoutModal(false); handleCheckOut() }}
+                disabled={checkOutMutation.isPending}
+                className="btn-primary"
+                style={{ flex: 1, background: 'var(--color-danger)', boxShadow: 'none' }}
+              >
+                {checkOutMutation.isPending ? 'Finalizando...' : 'Confirmar saída'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal anotação do evento */}
       {selectedEvent && (

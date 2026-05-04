@@ -171,6 +171,18 @@ input, textarea, select { font-family: var(--font-body); }
 
 .screen-transition { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
 
+/* ─── ADMIN DASHBOARD — Grid 2 colunas no desktop ─── */
+.admin-dashboard-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 32px;
+}
+@media (min-width: 768px) {
+  .admin-dashboard-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
 /* ─── SIDEBAR ADMIN — Responsividade ─── */
 @media (max-width: 767px) {
   .sidebar-desktop { display: none !important; }

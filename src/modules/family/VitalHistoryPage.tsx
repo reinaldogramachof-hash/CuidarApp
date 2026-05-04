@@ -5,6 +5,7 @@ import { supabase } from '../../lib/supabase'
 import { useQuery } from '@tanstack/react-query'
 import { C, T } from '../../utils/tokens'
 import { format, subDays, isToday, isYesterday, parseISO } from 'date-fns'
+import { LineChart, Line, XAxis, Tooltip, ResponsiveContainer } from 'recharts'
 import { ptBR } from 'date-fns/locale'
 
 export default function VitalHistoryPage() {
@@ -29,6 +30,12 @@ export default function VitalHistoryPage() {
     },
     enabled: !!patientId
   })
+
+  const chartData = [...(vitals || [])].reverse().map(v => ({
+    t: format(parseISO(v.measured_at), 'dd/MM'),
+    spo2: v.spo2,
+    fc: v.heart_rate,
+  }))
 
   // Grouping vitals by date
   const groupedVitals: Record<string, any[]> = {}
@@ -81,6 +88,35 @@ export default function VitalHistoryPage() {
       </header>
 
       <div style={{ padding: '20px' }}>
+        {/* ── Gráfico de Tendência ── */}
+        {!isLoading && chartData.length > 1 && (
+          <div style={{ background: '#fff', borderRadius: '16px', border: `1px solid ${C.border}`, padding: '16px', marginBottom: '24px' }}>
+            <h3 style={{ fontSize: '13px', fontWeight: 700, color: C.textMid, marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+              Tendência 7 dias
+            </h3>
+            <ResponsiveContainer width="100%" height={140}>
+              <LineChart data={chartData} margin={{ top: 5, right: 8, bottom: 0, left: -20 }}>
+                <XAxis dataKey="t" tick={{ fontSize: 10, fill: C.textLight }} tickLine={false} axisLine={false} />
+                <Tooltip
+                  contentStyle={{ fontSize: '12px', borderRadius: '8px', border: `1px solid ${C.border}` }}
+                  formatter={(value: any, name: string) => [value ?? '--', name === 'spo2' ? 'SpO₂ (%)' : 'FC (bpm)']}
+                />
+                <Line type="monotone" dataKey="spo2" stroke={C.primary} strokeWidth={2} dot={false} name="spo2" />
+                <Line type="monotone" dataKey="fc"   stroke={C.navy}    strokeWidth={2} dot={false} name="fc" />
+              </LineChart>
+            </ResponsiveContainer>
+            <div style={{ display: 'flex', gap: '16px', marginTop: '8px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', color: C.textMid }}>
+                <div style={{ width: '16px', height: '2px', background: C.primary, borderRadius: '1px' }}></div>
+                SpO₂
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', color: C.textMid }}>
+                <div style={{ width: '16px', height: '2px', background: C.navy, borderRadius: '1px' }}></div>
+                FC
+              </div>
+            </div>
+          </div>
+        )}
         {isLoading ? (
           <div style={{ textAlign: 'center', padding: '40px', color: C.textMid }}>Carregando histórico...</div>
         ) : Object.keys(groupedVitals).length === 0 ? (
