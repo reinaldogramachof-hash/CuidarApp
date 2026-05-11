@@ -97,16 +97,20 @@ A documentação estratégica e técnica do projeto está disponível em:
 - [`docs/BACKLOG.md`](docs/BACKLOG.md)
 - [`docs/VALIDATION_PLAN.md`](docs/VALIDATION_PLAN.md)
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)
+- [`docs/TECH_DECISIONS.md`](docs/TECH_DECISIONS.md)
 
 ## Estrutura inicial
 
 ```txt
 src/
+  constants/       Constantes de produto
   data/            Dados mockados e seeds temporárias
+  services/        Serviços simulados e futuras integrações
   types/           Tipos TypeScript compartilhados
+  utils/           Funções utilitárias
 ```
 
-Os modelos de domínio do MVP estão em `src/types/domain.ts`. Os dados mockados tipados estão em `src/data/mockCareData.ts`.
+Os modelos de domínio do MVP estão em `src/types/domain.ts`. Os dados mockados tipados estão em `src/data/mockCareData.ts`. A camada temporária de serviços está em `src/services/`.
 
 ## Como rodar localmente
 
