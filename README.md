@@ -89,13 +89,24 @@ O CuidarApp deve comunicar segurança, profissionalismo e cuidado. A marca deve 
 
 ## Documentação
 
-A documentação estratégica do projeto está disponível em:
+A documentação estratégica e técnica do projeto está disponível em:
 
 - [`docs/PRODUCT_VISION.md`](docs/PRODUCT_VISION.md)
 - [`docs/ROADMAP.md`](docs/ROADMAP.md)
 - [`docs/MVP_SCOPE.md`](docs/MVP_SCOPE.md)
 - [`docs/BACKLOG.md`](docs/BACKLOG.md)
 - [`docs/VALIDATION_PLAN.md`](docs/VALIDATION_PLAN.md)
+- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)
+
+## Estrutura inicial
+
+```txt
+src/
+  data/            Dados mockados e seeds temporárias
+  types/           Tipos TypeScript compartilhados
+```
+
+Os modelos de domínio do MVP estão em `src/types/domain.ts`. Os dados mockados tipados estão em `src/data/mockCareData.ts`.
 
 ## Como rodar localmente
 
@@ -112,13 +123,13 @@ npm install
 
 ### Variáveis de ambiente
 
-Crie um arquivo `.env.local` com as variáveis necessárias.
+Copie o arquivo `.env.example` para `.env.local` e preencha as variáveis necessárias.
 
 ```bash
-GEMINI_API_KEY=sua_chave_aqui
+cp .env.example .env.local
 ```
 
-> Observação: a IA não faz parte do MVP validado inicialmente. A variável pode existir por dependência do protótipo atual, mas a estratégia recomenda validar primeiro o fluxo básico de cuidado.
+> Observação: a IA não faz parte do MVP validado inicialmente. A variável `GEMINI_API_KEY` pode existir por dependência do protótipo atual, mas a estratégia recomenda validar primeiro o fluxo básico de cuidado.
 
 ### Executar em desenvolvimento
 
