@@ -18,15 +18,40 @@ Este documento define uma arquitetura inicial para transformar o protótipo visu
 ```txt
 src/
   components/      Componentes reutilizáveis
+    ui/            Componentes básicos de interface
+  constants/       Constantes de produto e configuração estática
   data/            Dados mockados e seeds temporárias
   features/        Fluxos por domínio do produto
   pages/           Telas principais
   services/        Integrações com backend, auth e notificações
+  styles/          Tokens de tema e estilos compartilhados
   types/           Tipos TypeScript compartilhados
   utils/           Funções utilitárias
 ```
 
-## 4. Domínios principais
+## 4. Componentes base
+
+Componentes reutilizáveis já extraídos:
+
+- `src/components/Logo.tsx`
+- `src/components/Avatar.tsx`
+- `src/components/ui/Badge.tsx`
+- `src/components/ui/Divider.tsx`
+- `src/components/ui/ProgressRing.tsx`
+
+O arquivo `src/components/index.ts` centraliza exports para facilitar imports futuros.
+
+## 5. Tema visual
+
+Tokens visuais compartilhados ficam em:
+
+```txt
+src/styles/theme.ts
+```
+
+Esse arquivo concentra cores, tipografia, sombras e raios de borda para reduzir duplicação visual no `App.tsx`.
+
+## 6. Domínios principais
 
 Os tipos iniciais estão em:
 
@@ -47,7 +72,7 @@ Modelos principais:
 - DailyReport
 - Alert
 
-## 5. Fluxos principais do MVP
+## 7. Fluxos principais do MVP
 
 ### Familiar
 
@@ -68,7 +93,7 @@ Modelos principais:
 6. Registrar ocorrência.
 7. Fazer check-out.
 
-## 6. Camadas sugeridas
+## 8. Camadas sugeridas
 
 ### Interface
 
@@ -86,7 +111,7 @@ Responsável por falar com backend/BaaS.
 
 Responsável por tipos, regras e estruturas centrais do produto.
 
-## 7. Backend/BaaS sugerido para MVP
+## 9. Backend/BaaS sugerido para MVP
 
 Para acelerar o MVP, uma solução BaaS pode ser usada inicialmente.
 
@@ -105,7 +130,7 @@ Critérios de escolha:
 - custo inicial baixo;
 - boa documentação.
 
-## 8. Segurança e LGPD
+## 10. Segurança e LGPD
 
 Desde o MVP, considerar:
 
@@ -117,14 +142,14 @@ Desde o MVP, considerar:
 - consentimento para uso dos dados;
 - exclusão de dados mediante solicitação.
 
-## 9. Decisões já tomadas
+## 11. Decisões já tomadas
 
 - IA não entra no MVP.
 - O MVP terá familiar e cuidador como perfis iniciais.
 - Relatório diário é a funcionalidade central.
 - O produto começa como diário digital de cuidado, não como prontuário médico completo.
 
-## 10. Próximos passos técnicos
+## 12. Próximos passos técnicos
 
 1. Refatorar `src/App.tsx` em páginas/componentes menores.
 2. Usar `src/data/mockCareData.ts` como fonte temporária de dados.
