@@ -1,29 +1,47 @@
 import { useEffect, useMemo, useState } from 'react';
-import type { CSSProperties } from 'react';
-import { Avatar, Badge, Divider, Logo, ProgressRing } from './components';
-import { PRODUCT_NAME, PRODUCT_POSITIONING, PRODUCT_TAGLINE } from './constants/product';
-import { mockCaregiverUser, mockFamilyUser, mockPatient } from './data/mockCareData';
-import { careService } from './services/careService';
+import type { CSSProperties, FormEvent } from 'react';
+import { Logo } from './components';
+import { PRODUCT_NAME, PRODUCT_TAGLINE } from './constants/product';
+import { authService, type AuthProfile } from './services/authService';
+import { supabase } from './services/supabaseClient';
 import { colors, radii, shadows, typography } from './styles/theme';
-import type { Activity, Alert, DailyReport, MedicationAdministration, Patient } from './types/domain';
-import { formatTime } from './utils/date';
 
-type ViewMode = 'family' | 'caregiver';
-
-const loadFonts = () => {
-  const existing = document.querySelector('[data-cuidarapp-fonts="true"]');
-
-  if (existing) {
-    return;
-  }
-
-  const link = document.createElement('link');
-  link.href =
-    'https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=DM+Sans:wght@400;500;600&display=swap';
-  link.rel = 'stylesheet';
-  link.dataset.cuidarappFonts = 'true';
-  document.head.appendChild(link);
+type PatientRow = {
+  id: string;
+  name: string;
+  age: number | null;
+  address: string | null;
+  conditions: string[];
+  dependency_level: number | null;
 };
+
+type RelationshipRow = {
+  id: string;
+  patient_id: string;
+  family_user_id: string;
+  caregiver_user_id: string | null;
+  invite_code: string;
+  status: 'pending' | 'active' | 'inactive';
+};
+
+type ActivityRow = {
+  id: string;
+  type: string;
+  title: string;
+  description: string | null;
+  occurred_at: string;
+};
+
+type AlertRow = {
+  id: string;
+  title: string;
+  message: string;
+  read: boolean;
+  created_at: string;
+};
+
+type AuthMode = 'login' | 'register';
+type RegisterRole = 'family' | 'caregiver';
 
 const appShellStyle: CSSProperties = {
   minHeight: '100vh',
@@ -33,11 +51,7 @@ const appShellStyle: CSSProperties = {
   padding: 20,
 };
 
-const containerStyle: CSSProperties = {
-  width: '100%',
-  maxWidth: 1120,
-  margin: '0 auto',
-};
+const containerStyle: CSSProperties = { width: '100%', maxWidth: 1120, margin: '0 auto' };
 
 const cardStyle: CSSProperties = {
   background: colors.surface,
@@ -47,12 +61,14 @@ const cardStyle: CSSProperties = {
   padding: 18,
 };
 
-const sectionTitleStyle: CSSProperties = {
-  fontFamily: typography.display,
-  fontSize: 18,
-  fontWeight: 800,
-  color: colors.navy,
-  margin: '0 0 12px',
+const inputStyle: CSSProperties = {
+  width: '100%',
+  border: `1px solid ${colors.border}`,
+  borderRadius: radii.md,
+  padding: '12px 14px',
+  fontFamily: typography.body,
+  fontSize: 14,
+  boxSizing: 'border-box',
 };
 
 const buttonStyle: CSSProperties = {
@@ -72,366 +88,474 @@ const secondaryButtonStyle: CSSProperties = {
   color: colors.primaryDark,
 };
 
+const sectionTitleStyle: CSSProperties = {
+  fontFamily: typography.display,
+  fontSize: 18,
+  fontWeight: 800,
+  color: colors.navy,
+  margin: '0 0 12px',
+};
+
 const AppShell = () => {
-  const [viewMode, setViewMode] = useState<ViewMode>('family');
-  const [patient, setPatient] = useState<Patient | null>(null);
-  const [activities, setActivities] = useState<Activity[]>([]);
-  const [alerts, setAlerts] = useState<Alert[]>([]);
-  const [dailyReport, setDailyReport] = useState<DailyReport | null>(null);
-  const [administrations, setAdministrations] = useState<MedicationAdministration[]>([]);
+  const [profile, setProfile] = useState<AuthProfile | null>(null);
+  const [patients, setPatients] = useState<PatientRow[]>([]);
+  const [relationships, setRelationships] = useState<RelationshipRow[]>([]);
+  const [selectedPatientId, setSelectedPatientId] = useState<string | null>(null);
+  const [activities, setActivities] = useState<ActivityRow[]>([]);
+  const [alerts, setAlerts] = useState<AlertRow[]>([]);
+  const [authMode, setAuthMode] = useState<AuthMode>('login');
+  const [registerRole, setRegisterRole] = useState<RegisterRole>('family');
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [inviteCode, setInviteCode] = useState('');
+  const [message, setMessage] = useState('Entre ou crie uma conta para validar os perfis reais.');
+  const [isLoading, setIsLoading] = useState(true);
+
+  const selectedPatient = patients.find((patient) => patient.id === selectedPatientId) ?? patients[0] ?? null;
+  const activeInvite = relationships.find((item) => item.patient_id === selectedPatient?.id)?.invite_code;
+
+  const unreadAlerts = useMemo(() => alerts.filter((alert) => !alert.read).length, [alerts]);
 
   useEffect(() => {
-    loadFonts();
-
-    const loadData = async () => {
-      const patientId = mockPatient.id;
-      const [patientData, activityData, alertData, reportData, medicationData] = await Promise.all([
-        careService.getPatient(patientId),
-        careService.listActivities(patientId),
-        careService.listAlerts(patientId),
-        careService.getDailyReport(patientId, '2026-05-02'),
-        careService.listMedicationAdministrations(patientId),
-      ]);
-
-      setPatient(patientData);
-      setActivities(activityData);
-      setAlerts(alertData);
-      setDailyReport(reportData);
-      setAdministrations(medicationData);
+    const boot = async () => {
+      try {
+        const session = await authService.getSession();
+        if (session?.user) {
+          const currentProfile = await authService.getProfile(session.user.id);
+          setProfile(currentProfile);
+        }
+      } catch (error) {
+        setMessage(getErrorMessage(error));
+      } finally {
+        setIsLoading(false);
+      }
     };
 
-    void loadData();
-  }, []);
+    void boot();
 
-  const medicationProgress = useMemo(() => {
-    if (!administrations.length) {
-      return 0;
-    }
+    const { data } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!session?.user) {
+        setProfile(null);
+        setPatients([]);
+        setRelationships([]);
+        setActivities([]);
+        setAlerts([]);
+        return;
+      }
 
-    const administered = administrations.filter((item) => item.status === 'administered').length;
-    return Math.round((administered / administrations.length) * 100);
-  }, [administrations]);
-
-  const unreadAlerts = alerts.filter((alert) => !alert.read);
-  const latestActivities = activities.slice(0, 5);
-
-  const handleCreateQuickActivity = async (title: string, type: Activity['type']) => {
-    const activity = await careService.createActivity({
-      patientId: mockPatient.id,
-      caregiverUserId: mockCaregiverUser.id,
-      title,
-      type,
+      void authService.getProfile(session.user.id).then(setProfile).catch((error) => setMessage(getErrorMessage(error)));
     });
 
-    setActivities((current) => [activity, ...current]);
+    return () => data.subscription.unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    if (!profile) return;
+    void loadWorkspace(profile);
+  }, [profile]);
+
+  useEffect(() => {
+    if (!selectedPatientId) return;
+    void loadPatientFeed(selectedPatientId);
+  }, [selectedPatientId]);
+
+  const loadWorkspace = async (currentProfile: AuthProfile) => {
+    setIsLoading(true);
+    try {
+      if (currentProfile.role === 'family') {
+        const [{ data: patientData, error: patientError }, { data: relationshipData, error: relationshipError }] = await Promise.all([
+          supabase
+            .from('patients')
+            .select('id, name, age, address, conditions, dependency_level')
+            .eq('created_by', currentProfile.id)
+            .order('created_at', { ascending: false }),
+          supabase
+            .from('care_relationships')
+            .select('id, patient_id, family_user_id, caregiver_user_id, invite_code, status')
+            .eq('family_user_id', currentProfile.id),
+        ]);
+
+        if (patientError) throw patientError;
+        if (relationshipError) throw relationshipError;
+
+        setPatients((patientData ?? []) as PatientRow[]);
+        setRelationships((relationshipData ?? []) as RelationshipRow[]);
+        setSelectedPatientId(patientData?.[0]?.id ?? null);
+      } else {
+        const { data: relationshipData, error: relationshipError } = await supabase
+          .from('care_relationships')
+          .select('id, patient_id, family_user_id, caregiver_user_id, invite_code, status')
+          .eq('caregiver_user_id', currentProfile.id);
+
+        if (relationshipError) throw relationshipError;
+
+        const patientIds = (relationshipData ?? []).map((item) => item.patient_id);
+        const { data: patientData, error: patientError } = patientIds.length
+          ? await supabase
+              .from('patients')
+              .select('id, name, age, address, conditions, dependency_level')
+              .in('id', patientIds)
+          : { data: [], error: null };
+
+        if (patientError) throw patientError;
+
+        setRelationships((relationshipData ?? []) as RelationshipRow[]);
+        setPatients((patientData ?? []) as PatientRow[]);
+        setSelectedPatientId(patientData?.[0]?.id ?? null);
+      }
+    } catch (error) {
+      setMessage(getErrorMessage(error));
+    } finally {
+      setIsLoading(false);
+    }
   };
+
+  const loadPatientFeed = async (patientId: string) => {
+    try {
+      const [{ data: activityData, error: activityError }, { data: alertData, error: alertError }] = await Promise.all([
+        supabase
+          .from('activities')
+          .select('id, type, title, description, occurred_at')
+          .eq('patient_id', patientId)
+          .order('occurred_at', { ascending: false }),
+        supabase
+          .from('alerts')
+          .select('id, title, message, read, created_at')
+          .order('created_at', { ascending: false }),
+      ]);
+
+      if (activityError) throw activityError;
+      if (alertError) throw alertError;
+
+      setActivities((activityData ?? []) as ActivityRow[]);
+      setAlerts((alertData ?? []) as AlertRow[]);
+    } catch (error) {
+      setMessage(getErrorMessage(error));
+    }
+  };
+
+  const handleAuthSubmit = async (event: FormEvent) => {
+    event.preventDefault();
+    setIsLoading(true);
+    try {
+      const currentProfile = authMode === 'login'
+        ? await authService.login({ email, password })
+        : await authService.register({ name, email, password, role: registerRole });
+
+      setProfile(currentProfile);
+      setMessage(currentProfile ? `Acesso validado como ${currentProfile.role === 'family' ? 'Familiar' : 'Cuidador'}.` : 'Confira seu e-mail para confirmar o cadastro.');
+    } catch (error) {
+      setMessage(getErrorMessage(error));
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const createDemoPatient = async () => {
+    if (!profile) return;
+    setIsLoading(true);
+    try {
+      const { data: patient, error: patientError } = await supabase
+        .from('patients')
+        .insert({
+          name: 'Maria da Silva',
+          age: 78,
+          address: 'Rua das Acácias, 142 – Moema, SP',
+          conditions: ['Hipertensão', 'Diabetes Tipo 2', 'Mobilidade Reduzida'],
+          dependency_level: 65,
+          emergency_contact_name: profile.name,
+          created_by: profile.id,
+        })
+        .select('id, name, age, address, conditions, dependency_level')
+        .single();
+
+      if (patientError) throw patientError;
+
+      const code = `CUIDAR-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
+      const { error: relationshipError } = await supabase.from('care_relationships').insert({
+        patient_id: patient.id,
+        family_user_id: profile.id,
+        invite_code: code,
+        status: 'pending',
+      });
+
+      if (relationshipError) throw relationshipError;
+
+      setMessage(`Paciente criado. Envie o código ${code} para o cuidador.`);
+      await loadWorkspace(profile);
+    } catch (error) {
+      setMessage(getErrorMessage(error));
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const acceptInvite = async () => {
+    if (!profile || !inviteCode.trim()) return;
+    setIsLoading(true);
+    try {
+      const { error } = await supabase.rpc('accept_caregiver_invite', { invite: inviteCode.trim().toUpperCase() });
+      if (error) throw error;
+      setMessage('Convite aceito. Paciente vinculado ao perfil cuidador.');
+      setInviteCode('');
+      await loadWorkspace(profile);
+    } catch (error) {
+      setMessage(getErrorMessage(error));
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const createActivity = async (type: string, title: string) => {
+    if (!profile || !selectedPatient) return;
+    setIsLoading(true);
+    try {
+      const { error } = await supabase.from('activities').insert({
+        patient_id: selectedPatient.id,
+        caregiver_user_id: profile.id,
+        type,
+        title,
+        description: `Registro criado por ${profile.name}.`,
+      });
+      if (error) throw error;
+
+      if (type === 'occurrence') {
+        const familyId = relationships.find((item) => item.patient_id === selectedPatient.id)?.family_user_id;
+        if (familyId) {
+          await supabase.from('alerts').insert({
+            patient_id: selectedPatient.id,
+            user_id: familyId,
+            type: 'occurrence',
+            title: 'OCORRÊNCIA',
+            message: `${profile.name} registrou uma ocorrência para ${selectedPatient.name}.`,
+          });
+        }
+      }
+
+      setMessage(`${title} salvo no Supabase.`);
+      await loadPatientFeed(selectedPatient.id);
+    } catch (error) {
+      setMessage(getErrorMessage(error));
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const signOut = async () => {
+    await authService.logout();
+    setMessage('Sessão encerrada.');
+  };
+
+  if (isLoading && !profile) {
+    return <main style={appShellStyle}><div style={containerStyle}>Carregando CuidarApp...</div></main>;
+  }
 
   return (
     <main style={appShellStyle}>
       <div style={containerStyle}>
-        <header
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: 16,
-            marginBottom: 24,
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-            <div style={{ boxShadow: shadows.logo, borderRadius: radii.logo, lineHeight: 0 }}>
-              <Logo size={64} />
-            </div>
-            <div>
-              <h1
-                style={{
-                  margin: 0,
-                  fontFamily: typography.display,
-                  fontSize: 32,
-                  color: colors.primaryDark,
-                  letterSpacing: -0.6,
-                }}
-              >
-                {PRODUCT_NAME}
-              </h1>
-              <p style={{ margin: '4px 0 0', color: colors.textMid }}>{PRODUCT_TAGLINE}</p>
-            </div>
-          </div>
-
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button
-              type="button"
-              style={viewMode === 'family' ? buttonStyle : secondaryButtonStyle}
-              onClick={() => setViewMode('family')}
-            >
-              Familiar
-            </button>
-            <button
-              type="button"
-              style={viewMode === 'caregiver' ? buttonStyle : secondaryButtonStyle}
-              onClick={() => setViewMode('caregiver')}
-            >
-              Cuidador
-            </button>
-          </div>
-        </header>
-
-        <section
-          style={{
-            ...cardStyle,
-            background: `linear-gradient(135deg, ${colors.primary} 0%, ${colors.primaryDark} 100%)`,
-            color: colors.surface,
-            border: 'none',
-            marginBottom: 18,
-          }}
-        >
-          <p style={{ margin: 0, fontSize: 14, opacity: 0.85 }}>{PRODUCT_POSITIONING}</p>
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'minmax(0, 1.4fr) minmax(260px, 0.6fr)',
-              gap: 20,
-              alignItems: 'center',
-              marginTop: 18,
-            }}
-          >
-            <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
-              <Avatar src={patient?.photoUrl} size={72} initials="MS" alt={patient?.name} />
-              <div>
-                <h2 style={{ margin: 0, fontFamily: typography.display, fontSize: 24 }}>
-                  {patient?.name ?? 'Carregando paciente...'}
-                </h2>
-                <p style={{ margin: '6px 0 0', opacity: 0.78 }}>
-                  {patient?.age ? `${patient.age} anos` : 'Idade não informada'} · {patient?.address ?? 'Endereço não informado'}
-                </p>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 10 }}>
-                  {patient?.conditions.map((condition) => (
-                    <Badge key={condition.id} color={colors.surface} background="rgba(255,255,255,0.18)">
-                      {condition.name}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            <div
-              style={{
-                background: 'rgba(255,255,255,0.14)',
-                borderRadius: radii.lg,
-                padding: 14,
-                display: 'flex',
-                alignItems: 'center',
-                gap: 10,
-              }}
-            >
-              <Avatar src={mockCaregiverUser.avatarUrl} size={44} initials="AL" alt={mockCaregiverUser.name} />
-              <div>
-                <strong style={{ display: 'block' }}>{mockCaregiverUser.name}</strong>
-                <span style={{ fontSize: 13, opacity: 0.75 }}>Cuidadora vinculada · em atendimento</span>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
-            gap: 14,
-            marginBottom: 18,
-          }}
-        >
-          <MetricCard title="Medicação" value={`${medicationProgress}%`} detail="doses administradas" tone="primary" />
-          <MetricCard title="Alertas" value={String(unreadAlerts.length)} detail="pendentes" tone="danger" />
-          <MetricCard title="Atividades" value={String(activities.length)} detail="registros no dia" tone="accent" />
-          <MetricCard title="Relatório" value={dailyReport ? 'Pronto' : 'Pendente'} detail="resumo diário" tone="info" />
-        </div>
-
-        {viewMode === 'family' ? (
-          <FamilyDashboard
-            activities={latestActivities}
-            alerts={alerts}
-            dailyReport={dailyReport}
-            medicationProgress={medicationProgress}
+        <Header profile={profile} onSignOut={signOut} />
+        {!profile ? (
+          <AuthPanel
+            mode={authMode}
+            role={registerRole}
+            name={name}
+            email={email}
+            password={password}
+            message={message}
+            isLoading={isLoading}
+            onModeChange={setAuthMode}
+            onRoleChange={setRegisterRole}
+            onNameChange={setName}
+            onEmailChange={setEmail}
+            onPasswordChange={setPassword}
+            onSubmit={handleAuthSubmit}
           />
         ) : (
-          <CaregiverDashboard onCreateQuickActivity={handleCreateQuickActivity} activities={latestActivities} />
+          <Workspace
+            profile={profile}
+            patients={patients}
+            selectedPatient={selectedPatient}
+            relationships={relationships}
+            activities={activities}
+            alerts={alerts}
+            unreadAlerts={unreadAlerts}
+            inviteCode={inviteCode}
+            activeInvite={activeInvite}
+            message={message}
+            isLoading={isLoading}
+            onCreateDemoPatient={createDemoPatient}
+            onInviteCodeChange={setInviteCode}
+            onAcceptInvite={acceptInvite}
+            onCreateActivity={createActivity}
+          />
         )}
       </div>
     </main>
   );
 };
 
-type MetricCardProps = {
-  title: string;
-  value: string;
-  detail: string;
-  tone: 'primary' | 'danger' | 'accent' | 'info';
+const Header = ({ profile, onSignOut }: { profile: AuthProfile | null; onSignOut: () => void }) => (
+  <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16, marginBottom: 24, flexWrap: 'wrap' }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+      <div style={{ boxShadow: shadows.logo, borderRadius: radii.logo, lineHeight: 0 }}><Logo size={64} /></div>
+      <div>
+        <h1 style={{ margin: 0, fontFamily: typography.display, fontSize: 32, color: colors.primaryDark }}>{PRODUCT_NAME}</h1>
+        <p style={{ margin: '4px 0 0', color: colors.textMid }}>{PRODUCT_TAGLINE}</p>
+      </div>
+    </div>
+    {profile && <button type="button" style={secondaryButtonStyle} onClick={onSignOut}>Sair</button>}
+  </header>
+);
+
+type AuthPanelProps = {
+  mode: AuthMode;
+  role: RegisterRole;
+  name: string;
+  email: string;
+  password: string;
+  message: string;
+  isLoading: boolean;
+  onModeChange: (mode: AuthMode) => void;
+  onRoleChange: (role: RegisterRole) => void;
+  onNameChange: (value: string) => void;
+  onEmailChange: (value: string) => void;
+  onPasswordChange: (value: string) => void;
+  onSubmit: (event: FormEvent) => void;
 };
 
-const toneMap = {
-  primary: { color: colors.primary, background: colors.primaryLight },
-  danger: { color: colors.danger, background: colors.dangerLight },
-  accent: { color: colors.accent, background: colors.accentLight },
-  info: { color: colors.info, background: colors.infoLight },
-};
-
-const MetricCard = ({ title, value, detail, tone }: MetricCardProps) => {
-  const toneConfig = toneMap[tone];
-
-  return (
-    <section style={cardStyle}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center' }}>
-        <div>
-          <p style={{ margin: 0, color: colors.textMid, fontSize: 13 }}>{title}</p>
-          <strong
-            style={{
-              display: 'block',
-              marginTop: 4,
-              fontFamily: typography.display,
-              fontSize: 28,
-              color: toneConfig.color,
-            }}
-          >
-            {value}
-          </strong>
-          <span style={{ color: colors.textLight, fontSize: 12 }}>{detail}</span>
+const AuthPanel = ({ mode, role, name, email, password, message, isLoading, onModeChange, onRoleChange, onNameChange, onEmailChange, onPasswordChange, onSubmit }: AuthPanelProps) => (
+  <section style={{ ...cardStyle, maxWidth: 520, margin: '40px auto' }}>
+    <h2 style={sectionTitleStyle}>{mode === 'login' ? 'Entrar no CuidarApp' : 'Criar acesso de validação'}</h2>
+    <p style={{ color: colors.textMid }}>Use cadastro real via Supabase para validar o painel Familiar ou Cuidador.</p>
+    <form onSubmit={onSubmit} style={{ display: 'grid', gap: 12 }}>
+      {mode === 'register' && <input style={inputStyle} value={name} onChange={(event) => onNameChange(event.target.value)} placeholder="Nome" required />}
+      <input style={inputStyle} value={email} onChange={(event) => onEmailChange(event.target.value)} placeholder="E-mail" type="email" required />
+      <input style={inputStyle} value={password} onChange={(event) => onPasswordChange(event.target.value)} placeholder="Senha" type="password" required minLength={6} />
+      {mode === 'register' && (
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+          <button type="button" style={role === 'family' ? buttonStyle : secondaryButtonStyle} onClick={() => onRoleChange('family')}>Familiar</button>
+          <button type="button" style={role === 'caregiver' ? buttonStyle : secondaryButtonStyle} onClick={() => onRoleChange('caregiver')}>Cuidador</button>
         </div>
-        <div
-          style={{
-            width: 46,
-            height: 46,
-            borderRadius: radii.md,
-            background: toneConfig.background,
-          }}
-        />
-      </div>
-    </section>
-  );
+      )}
+      <button type="submit" style={buttonStyle} disabled={isLoading}>{isLoading ? 'Validando...' : mode === 'login' ? 'Entrar' : 'Criar conta'}</button>
+    </form>
+    <button type="button" style={{ ...secondaryButtonStyle, width: '100%', marginTop: 12 }} onClick={() => onModeChange(mode === 'login' ? 'register' : 'login')}>
+      {mode === 'login' ? 'Criar nova conta' : 'Já tenho conta'}
+    </button>
+    <p style={{ color: colors.textMid, fontSize: 13 }}>{message}</p>
+  </section>
+);
+
+type WorkspaceProps = {
+  profile: AuthProfile;
+  patients: PatientRow[];
+  selectedPatient: PatientRow | null;
+  relationships: RelationshipRow[];
+  activities: ActivityRow[];
+  alerts: AlertRow[];
+  unreadAlerts: number;
+  inviteCode: string;
+  activeInvite?: string;
+  message: string;
+  isLoading: boolean;
+  onCreateDemoPatient: () => void;
+  onInviteCodeChange: (value: string) => void;
+  onAcceptInvite: () => void;
+  onCreateActivity: (type: string, title: string) => void;
 };
 
-type FamilyDashboardProps = {
-  activities: Activity[];
-  alerts: Alert[];
-  dailyReport: DailyReport | null;
-  medicationProgress: number;
-};
-
-const FamilyDashboard = ({ activities, alerts, dailyReport, medicationProgress }: FamilyDashboardProps) => (
-  <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.35fr) minmax(280px, 0.65fr)', gap: 18 }}>
-    <section style={cardStyle}>
-      <h2 style={sectionTitleStyle}>Linha do dia</h2>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-        {activities.map((activity) => (
-          <div key={activity.id} style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
-            <div
-              style={{
-                width: 32,
-                height: 32,
-                borderRadius: '50%',
-                background: colors.primaryLight,
-                border: `2px solid ${colors.primaryMid}`,
-                flexShrink: 0,
-              }}
-            />
-            <div>
-              <strong style={{ display: 'block', color: colors.navy }}>{activity.title}</strong>
-              <span style={{ color: colors.textLight, fontSize: 12 }}>{formatTime(activity.occurredAt)}</span>
-            </div>
-          </div>
-        ))}
-      </div>
+const Workspace = ({ profile, patients, selectedPatient, relationships, activities, alerts, unreadAlerts, inviteCode, activeInvite, message, isLoading, onCreateDemoPatient, onInviteCodeChange, onAcceptInvite, onCreateActivity }: WorkspaceProps) => (
+  <>
+    <section style={{ ...cardStyle, background: `linear-gradient(135deg, ${colors.primary} 0%, ${colors.primaryDark} 100%)`, color: colors.surface, border: 'none', marginBottom: 18 }}>
+      <p style={{ margin: 0, opacity: 0.85 }}>Acesso real via Supabase Auth · Perfil {profile.role === 'family' ? 'Familiar' : 'Cuidador'}</p>
+      <h2 style={{ margin: '12px 0 4px', fontFamily: typography.display, fontSize: 28 }}>Olá, {profile.name}</h2>
+      <p style={{ margin: 0, opacity: 0.78 }}>{selectedPatient ? `${selectedPatient.name} · ${selectedPatient.age ?? '-'} anos` : 'Nenhum paciente vinculado ainda.'}</p>
+      {activeInvite && <p style={{ marginBottom: 0 }}>Código para cuidador: <strong>{activeInvite}</strong></p>}
     </section>
 
-    <aside style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
-      <section style={cardStyle}>
-        <h2 style={sectionTitleStyle}>Medicação</h2>
-        <div style={{ position: 'relative', width: 96, height: 96, marginBottom: 12 }}>
-          <ProgressRing percentage={medicationProgress} size={96} stroke={8} color={colors.accent} />
-          <strong
-            style={{
-              position: 'absolute',
-              inset: 0,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontFamily: typography.display,
-              fontSize: 22,
-              color: colors.accent,
-            }}
-          >
-            {medicationProgress}%
-          </strong>
-        </div>
-        <p style={{ margin: 0, color: colors.textMid }}>Progresso das doses registradas hoje.</p>
-      </section>
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 14, marginBottom: 18 }}>
+      <Metric title="Pacientes" value={String(patients.length)} />
+      <Metric title="Vínculos" value={String(relationships.length)} />
+      <Metric title="Registros" value={String(activities.length)} />
+      <Metric title="Alertas" value={String(unreadAlerts)} />
+    </div>
 
-      <section style={cardStyle}>
-        <h2 style={sectionTitleStyle}>Alertas</h2>
-        {alerts.map((alert) => (
-          <div key={alert.id} style={{ marginBottom: 12 }}>
-            <Badge color={alert.read ? colors.textMid : colors.danger} background={alert.read ? colors.bg : colors.dangerLight}>
-              {alert.title}
-            </Badge>
-            <p style={{ margin: '6px 0 0', color: colors.textMid, fontSize: 13 }}>{alert.message}</p>
-          </div>
-        ))}
-      </section>
+    {profile.role === 'family' ? (
+      <FamilyPanel patients={patients} alerts={alerts} activities={activities} selectedPatient={selectedPatient} isLoading={isLoading} message={message} onCreateDemoPatient={onCreateDemoPatient} />
+    ) : (
+      <CaregiverPanel selectedPatient={selectedPatient} inviteCode={inviteCode} activities={activities} isLoading={isLoading} message={message} onInviteCodeChange={onInviteCodeChange} onAcceptInvite={onAcceptInvite} onCreateActivity={onCreateActivity} />
+    )}
+  </>
+);
 
-      <section style={cardStyle}>
-        <h2 style={sectionTitleStyle}>Relatório diário</h2>
-        <p style={{ margin: 0, color: colors.textMid, lineHeight: 1.5 }}>
-          {dailyReport?.summary ?? 'Relatório ainda não gerado.'}
-        </p>
-      </section>
-    </aside>
+const Metric = ({ title, value }: { title: string; value: string }) => (
+  <section style={cardStyle}>
+    <p style={{ margin: 0, color: colors.textMid }}>{title}</p>
+    <strong style={{ display: 'block', marginTop: 4, fontFamily: typography.display, fontSize: 28, color: colors.primary }}>{value}</strong>
+  </section>
+);
+
+const FamilyPanel = ({ patients, alerts, activities, selectedPatient, isLoading, message, onCreateDemoPatient }: { patients: PatientRow[]; alerts: AlertRow[]; activities: ActivityRow[]; selectedPatient: PatientRow | null; isLoading: boolean; message: string; onCreateDemoPatient: () => void }) => (
+  <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.25fr) minmax(280px, 0.75fr)', gap: 18 }}>
+    <section style={cardStyle}>
+      <h2 style={sectionTitleStyle}>Painel Familiar</h2>
+      {!patients.length && <button type="button" style={buttonStyle} disabled={isLoading} onClick={onCreateDemoPatient}>Criar paciente de teste</button>}
+      {selectedPatient && <p style={{ color: colors.textMid }}>Acompanhe os registros reais feitos pelo cuidador vinculado.</p>}
+      <Feed activities={activities} />
+      <p style={{ color: colors.textMid }}>{message}</p>
+    </section>
+    <section style={cardStyle}>
+      <h2 style={sectionTitleStyle}>Alertas</h2>
+      {alerts.length ? alerts.map((alert) => <p key={alert.id}><strong>{alert.title}</strong><br />{alert.message}</p>) : <p style={{ color: colors.textMid }}>Nenhum alerta real ainda.</p>}
+    </section>
   </div>
 );
 
-type CaregiverDashboardProps = {
-  activities: Activity[];
-  onCreateQuickActivity: (title: string, type: Activity['type']) => Promise<void>;
-};
-
-const CaregiverDashboard = ({ activities, onCreateQuickActivity }: CaregiverDashboardProps) => (
+const CaregiverPanel = ({ selectedPatient, inviteCode, activities, isLoading, message, onInviteCodeChange, onAcceptInvite, onCreateActivity }: { selectedPatient: PatientRow | null; inviteCode: string; activities: ActivityRow[]; isLoading: boolean; message: string; onInviteCodeChange: (value: string) => void; onAcceptInvite: () => void; onCreateActivity: (type: string, title: string) => void }) => (
   <div style={{ display: 'grid', gridTemplateColumns: 'minmax(280px, 0.75fr) minmax(0, 1.25fr)', gap: 18 }}>
     <section style={cardStyle}>
-      <h2 style={sectionTitleStyle}>Registro rápido</h2>
-      <p style={{ margin: '0 0 14px', color: colors.textMid }}>
-        Registre a rotina em poucos cliques. Formulários detalhados entram na próxima etapa do MVP.
-      </p>
-      <div style={{ display: 'grid', gap: 10 }}>
-        <button type="button" style={buttonStyle} onClick={() => onCreateQuickActivity('Check-in realizado', 'check_in')}>
-          Fazer check-in
-        </button>
-        <button type="button" style={secondaryButtonStyle} onClick={() => onCreateQuickActivity('Medicação administrada', 'medication')}>
-          Confirmar medicação
-        </button>
-        <button type="button" style={secondaryButtonStyle} onClick={() => onCreateQuickActivity('Refeição realizada', 'meal')}>
-          Registrar refeição
-        </button>
-        <button type="button" style={secondaryButtonStyle} onClick={() => onCreateQuickActivity('Ocorrência registrada', 'occurrence')}>
-          Registrar ocorrência
-        </button>
-      </div>
-    </section>
-
-    <section style={cardStyle}>
-      <h2 style={sectionTitleStyle}>Últimos registros</h2>
-      {activities.map((activity, index) => (
-        <div key={activity.id}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}>
-            <div>
-              <strong style={{ display: 'block' }}>{activity.title}</strong>
-              <span style={{ color: colors.textLight, fontSize: 12 }}>{activity.type}</span>
-            </div>
-            <span style={{ color: colors.textMid, fontSize: 13 }}>{formatTime(activity.occurredAt)}</span>
-          </div>
-          {index < activities.length - 1 && <Divider />}
+      <h2 style={sectionTitleStyle}>Painel Cuidador</h2>
+      {!selectedPatient ? (
+        <div style={{ display: 'grid', gap: 10 }}>
+          <p style={{ color: colors.textMid }}>Digite o código enviado pelo familiar para vincular o paciente.</p>
+          <input style={inputStyle} value={inviteCode} onChange={(event) => onInviteCodeChange(event.target.value)} placeholder="Ex.: CUIDAR-ABC123" />
+          <button type="button" style={buttonStyle} disabled={isLoading} onClick={onAcceptInvite}>Aceitar convite</button>
         </div>
-      ))}
+      ) : (
+        <div style={{ display: 'grid', gap: 10 }}>
+          <p style={{ color: colors.textMid }}>Paciente vinculado: <strong>{selectedPatient.name}</strong></p>
+          <button type="button" style={buttonStyle} onClick={() => onCreateActivity('check_in', 'Check-in realizado')}>Fazer check-in</button>
+          <button type="button" style={secondaryButtonStyle} onClick={() => onCreateActivity('meal', 'Refeição realizada')}>Registrar refeição</button>
+          <button type="button" style={secondaryButtonStyle} onClick={() => onCreateActivity('medication', 'Medicação administrada')}>Confirmar medicação</button>
+          <button type="button" style={{ ...secondaryButtonStyle, background: colors.dangerLight, color: colors.danger }} onClick={() => onCreateActivity('occurrence', 'Ocorrência registrada')}>Registrar ocorrência</button>
+          <button type="button" style={secondaryButtonStyle} onClick={() => onCreateActivity('check_out', 'Check-out realizado')}>Fazer check-out</button>
+        </div>
+      )}
+      <p style={{ color: colors.textMid }}>{message}</p>
+    </section>
+    <section style={cardStyle}>
+      <h2 style={sectionTitleStyle}>Registros enviados</h2>
+      <Feed activities={activities} />
     </section>
   </div>
 );
+
+const Feed = ({ activities }: { activities: ActivityRow[] }) => (
+  <div style={{ display: 'grid', gap: 10 }}>
+    {activities.length ? activities.map((activity) => (
+      <div key={activity.id} style={{ borderBottom: `1px solid ${colors.border}`, paddingBottom: 10 }}>
+        <strong>{activity.title}</strong>
+        <div style={{ color: colors.textMid, fontSize: 13 }}>{activity.type} · {new Date(activity.occurred_at).toLocaleString('pt-BR')}</div>
+        {activity.description && <div style={{ color: colors.textMid, fontSize: 13 }}>{activity.description}</div>}
+      </div>
+    )) : <p style={{ color: colors.textMid }}>Nenhum registro real ainda.</p>}
+  </div>
+);
+
+const getErrorMessage = (error: unknown) => {
+  if (error instanceof Error) return error.message;
+  return 'Não foi possível concluir a operação.';
+};
 
 export default AppShell;

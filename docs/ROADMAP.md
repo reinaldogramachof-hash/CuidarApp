@@ -16,6 +16,8 @@ Este roadmap organiza a evolução do CuidarApp de protótipo visual para MVP fu
 - Definir arquitetura inicial.
 - Separar dados mockados de componentes visuais.
 - Definir modelo básico de dados.
+- Preparar deploy na Vercel.
+- Remover dependências fora do MVP inicial.
 
 ### Resultado esperado
 
@@ -64,6 +66,75 @@ Projeto deixa de parecer template e passa a comunicar claramente produto, públi
 ### Resultado esperado
 
 Uma família e um cuidador conseguem usar o produto em uma rotina real de teste.
+
+---
+
+## Roadmap operacional dos perfis
+
+### Sprint 1 — Experiência visual por perfil
+
+**Objetivo:** separar a experiência de Familiar e Cuidador usando dados mockados e estado local.
+
+Entregas:
+
+- Seletor de perfil Familiar/Cuidador.
+- Painel Familiar com status, linha do dia, alertas e relatório.
+- Painel Cuidador com paciente do turno, check-in, check-out e registro rápido.
+- Registros feitos pelo cuidador refletindo na linha do tempo do familiar.
+- Ocorrência simulada gerando alerta visual.
+
+Critério de sucesso:
+
+- O fluxo `cuidador registra → familiar acompanha` é compreensível sem explicação técnica.
+
+### Sprint 2 — Fluxo Cuidador operacional
+
+**Objetivo:** reduzir fricção do cuidador no registro da rotina.
+
+Entregas:
+
+- Check-in/check-out com estado do turno.
+- Registro rápido por tipo: refeição, higiene, medicação, sinais vitais, mobilidade, observação e ocorrência.
+- Confirmação de medicação pendente.
+- Ocorrência com gravidade.
+- Lista de pendências do turno.
+
+Critério de sucesso:
+
+- Uma atividade comum pode ser registrada em até 3 interações.
+
+### Sprint 3 — Fluxo Familiar integrado
+
+**Objetivo:** mostrar valor para a família a partir dos registros do cuidador.
+
+Entregas:
+
+- Linha do dia filtrável.
+- Cartões de status do paciente.
+- Alertas derivados de ocorrência e medicação atrasada.
+- Relatório diário gerado a partir dos registros simulados.
+- Tela de saúde com medicações e sinais vitais.
+
+Critério de sucesso:
+
+- O familiar entende o status do cuidado em poucos segundos.
+
+### Sprint 4 — Autenticação e persistência
+
+**Objetivo:** substituir mock/local state por dados reais.
+
+Entregas:
+
+- Escolha e configuração do BaaS.
+- Autenticação de familiar e cuidador.
+- Cadastro de paciente.
+- Vínculo familiar-cuidador-paciente.
+- Persistência de atividades, medicações, ocorrências, alertas e relatório.
+- Regras básicas de permissão.
+
+Critério de sucesso:
+
+- Duas contas reais conseguem simular uma rotina de cuidado em produção.
 
 ---
 
@@ -196,7 +267,7 @@ IA deve aumentar valor percebido, não substituir o fluxo central do cuidador.
 
 | Fase | Foco | Prioridade |
 |---|---|---|
-| 0 | Documentação e fundação | Alta |
+| 0 | Documentação, fundação e deploy | Alta |
 | 1 | MVP funcional | Alta |
 | 2 | Piloto real | Alta |
 | 3 | Produto pagável | Média/Alta |
@@ -208,9 +279,10 @@ IA deve aumentar valor percebido, não substituir o fluxo central do cuidador.
 
 Implementar a Fase 1 com foco em:
 
-1. autenticação simples;
-2. perfis de familiar e cuidador;
-3. cadastro de paciente;
+1. seletor de perfil;
+2. experiência familiar;
+3. experiência cuidador;
 4. check-in/check-out;
-5. registro de atividades;
-6. relatório diário.
+5. registro rápido;
+6. reflexo dos registros na linha do tempo;
+7. relatório diário simples.

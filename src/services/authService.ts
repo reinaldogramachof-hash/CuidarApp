@@ -1,52 +1,79 @@
-import { mockCaregiverUser, mockFamilyUser } from '../data/mockCareData';
-import type { User, UserRole } from '../types/domain';
+import type { Session } from '@supabase/supabase-js';
+import type { UserRole } from '../types/domain';
+import { supabase } from './supabaseClient';
 
 export type LoginInput = {
   email: string;
   password: string;
-  role?: UserRole;
 };
 
 export type RegisterInput = {
   name: string;
   email: string;
   password: string;
-  role: UserRole;
+  role: Exclude<UserRole, 'admin'>;
   phone?: string;
 };
 
-const wait = async <T>(data: T): Promise<T> =>
-  new Promise((resolve) => {
-    window.setTimeout(() => resolve(data), 120);
-  });
-
-const createId = (prefix: string) => `${prefix}-${crypto.randomUUID()}`;
+export type AuthProfile = {
+  id: string;
+  name: string;
+  role: Exclude<UserRole, 'admin'>;
+  phone?: string | null;
+  avatar_url?: string | null;
+};
 
 export const authService = {
-  async getCurrentUser(): Promise<User> {
-    return wait(mockFamilyUser);
+  async getSession(): Promise<Session | null> {
+    const { data, error } = await supabase.auth.getSession();
+    if (error) throw error;
+    return data.session;
   },
 
-  async login(input: LoginInput): Promise<User> {
-    if (input.role === 'caregiver') {
-      return wait(mockCaregiverUser);
-    }
+  async getProfile(userId: string): Promise<AuthProfile | null> {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('id, name, role, phone, avatar_url')
+      .eq('id', userId)
+      .maybeSingle();
 
-    return wait(mockFamilyUser);
+    if (error) throw error;
+    return data as AuthProfile | null;
   },
 
-  async register(input: RegisterInput): Promise<User> {
-    return wait({
-      id: createId(input.role),
-      name: input.name,
+  async login(input: LoginInput): Promise<AuthProfile | null> {
+    const { data, error } = await supabase.auth.signInWithPassword({
       email: input.email,
-      role: input.role,
-      phone: input.phone,
-      createdAt: new Date().toISOString(),
+      password: input.password,
     });
+
+    if (error) throw error;
+    if (!data.user) return null;
+
+    return this.getProfile(data.user.id);
+  },
+
+  async register(input: RegisterInput): Promise<AuthProfile | null> {
+    const { data, error } = await supabase.auth.signUp({
+      email: input.email,
+      password: input.password,
+      options: {
+        data: {
+          name: input.name,
+          role: input.role,
+          phone: input.phone,
+        },
+      },
+    });
+
+    if (error) throw error;
+    if (!data.user) return null;
+
+    return this.getProfile(data.user.id);
   },
 
   async logout(): Promise<void> {
-    return wait(undefined);
+    const { error } = await supabase.auth.signOut();
+    if (error) throw error;
   },
 };
