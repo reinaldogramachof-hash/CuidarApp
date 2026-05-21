@@ -112,13 +112,13 @@ npm install
 
 ### Variáveis de ambiente
 
-Crie um arquivo `.env.local` com as variáveis necessárias.
+Copie o arquivo `.env.example` para `.env.local` e preencha as variáveis necessárias.
 
 ```bash
-GEMINI_API_KEY=sua_chave_aqui
+cp .env.example .env.local
 ```
 
-> Observação: a IA não faz parte do MVP validado inicialmente. A variável pode existir por dependência do protótipo atual, mas a estratégia recomenda validar primeiro o fluxo básico de cuidado.
+> Observação: inteligência artificial não faz parte do MVP inicial. As dependências e variáveis do Google/Gemini foram removidas para manter o foco no fluxo básico de cuidado.
 
 ### Executar em desenvolvimento
 
@@ -137,6 +137,15 @@ npm run build
 ```bash
 npm run lint
 ```
+
+## Deploy na Vercel
+
+Este projeto usa Vite. Para deploy na Vercel, use as configurações padrão:
+
+- Framework Preset: Vite
+- Build Command: `npm run build`
+- Output Directory: `dist`
+- Install Command: `npm install`
 
 ## Status do projeto
 
